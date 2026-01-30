@@ -1,0 +1,4 @@
+link to DUO 
+https://duo.com/docs/duoweb?_gl=1*ua9bxi*_gcl_au*NDAzNzUwNTIwLjE3Njk1NTIwMDU.*_ga*MTY4MzEzODQ4LjE3Njk1NTIwMDU.*_ga_KP8QEFW4ML*
+FastAPI-Mail - for email verification, shoulndt need any other dependencys
+FastAPI-Users - handles users, no idea how to integrate with PostgreSQL
