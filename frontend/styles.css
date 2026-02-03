@@ -74,7 +74,16 @@ button.button {
   float: left;
   color: #f2f2f2;
   text-align: center;
-  padding: 14px 16px;
+  padding: 20px 80px;
+  text-decoration: none;
+  font-size: 17px;
+}
+
+.topnav b {
+  float: left;
+  color: #f2f2f2;
+  text-align: center;
+  padding: 20px 80px;
   text-decoration: none;
   font-size: 17px;
 }
