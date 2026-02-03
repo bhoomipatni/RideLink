@@ -1,9 +1,12 @@
 from typing import Union
 
 from fastapi import FastAPI
+from RideLink.backend import models
 
 app = FastAPI()
 
+# Example database query to ensure models are loaded
+users = models.session.query(models.User).all()
 
 @app.get("/")
 def read_root():
