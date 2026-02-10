@@ -3,11 +3,12 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import Float, Boolean
 import datetime
+import os
 
 Base = declarative_base()
 
 # update postgres address as needed
-database_url = 'postgresql://username:password@host/database_name'
+database_url = os.getenv('DATABASE_URL')
 
 # Create an engine
 engine = create_engine(database_url)
