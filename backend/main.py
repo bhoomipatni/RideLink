@@ -1,7 +1,7 @@
 from typing import Union
 
 from fastapi import FastAPI
-from RideLink.backend import models
+from backend import models
 
 app = FastAPI()
 
@@ -14,5 +14,5 @@ def read_root():
 
 
 @app.get("/items/{item_id}")
-def read_item(item_id: int, q: Union[str, None] = None):
-    return {"item_id": item_id, "q": q}
+def read_item(item_id: int):
+    return {"result": item_id,}
