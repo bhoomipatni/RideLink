@@ -1,6 +1,7 @@
 from sqlalchemy import Boolean, Float, create_engine, Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import Float, Boolean
 import datetime
 
 Base = declarative_base()
@@ -11,7 +12,7 @@ database_url = 'postgresql://username:password@host/database_name'
 # Create an engine
 engine = create_engine(database_url)
 
-Base() = declarative_base()
+Base = declarative_base()
 
 # example model
 class User(Base):
@@ -30,7 +31,7 @@ class Rides(Base):
     cost = Column(Float, nullable=False, default=0.0)
     isactive = Column(Boolean, default=True, nullable=False)
     description = Column(String(500), nullable=True)
-    date = Column(DateTime, default=datetime.timezone.now, nullable=False)
+    date = Column(DateTime, default=datetime.timezone.utc, nullable=False)
 
     
 
