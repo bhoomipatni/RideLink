@@ -32,6 +32,8 @@ class Rides(Base):
     isactive = Column(Boolean, default=True, nullable=False)
     description = Column(String(500), nullable=True)
     date = Column(DateTime, default=datetime.timezone.utc, nullable=False)
+    lat = Column(Float, nullable=False)
+    long = Column(Float, nullable=False)
 
     
 
