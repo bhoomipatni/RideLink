@@ -1,15 +1,21 @@
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 from backend import models
 from backend.models import engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 import datetime
 
 app = FastAPI()
-# insert the data into database and start a session
-Session = sessionmaker(bind=engine)
-session = Session()
+
+SessionLocal = sessionmaker(bind=engine)
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 # Example database query to ensure models are loaded
 # users = session.query(models.User).all()
@@ -59,8 +65,8 @@ def read_item(item_id: int):
 
 
 @app.get("/rides/{ride_id}")
-def read_ride(ride_id: int):
-    ride = session.query(models.Rides).filter_by(id=ride_id).first()
+def read_ride(ride_id: int, db: Session = Depends(get_db)):
+    ride = db.query(models.Rides).filter_by(id=ride_id).first()
     if ride:
         return {
             "id": ride.id,
@@ -77,8 +83,8 @@ def read_ride(ride_id: int):
         raise HTTPException(status_code=404, detail="Ride not found")
 
 @app.get("/users/{user_id}")
-def read_user(user_id: int):
-    user = session.query(models.User).filter_by(id=user_id).first()
+def read_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter_by(id=user_id).first()
     if user:
         return {
             "id": user.id,
@@ -91,7 +97,7 @@ def read_user(user_id: int):
         raise HTTPException(status_code=404, detail="User not found")
 
 @app.post("/request_ride")
-def request_ride(ride: RideRequest):
+def request_ride(ride: RideRequest, db: Session = Depends(get_db)):
     new_ride = models.Rides(
         driverid=ride.driverid,
         address=ride.address,
@@ -102,16 +108,16 @@ def request_ride(ride: RideRequest):
         long=ride.long,
     )
     try:
-        session.add(new_ride)
-        session.commit()
-        session.refresh(new_ride)
+        db.add(new_ride)
+        db.commit()
+        db.refresh(new_ride)
         return new_ride
     except Exception as e:
-        session.rollback()
+        db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/add_user")
-def add_user(user: putUser):
+def add_user(user: putUser, db: Session = Depends(get_db)):
     new_user = models.User(
         username=user.username,
         email=user.email,
@@ -119,10 +125,10 @@ def add_user(user: putUser):
         password=user.password
     )
     try:
-        session.add(new_user)
-        session.commit()
-        session.refresh(new_user)
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
         return new_user
     except Exception as e:
-        session.rollback()
+        db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
