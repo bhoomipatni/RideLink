@@ -1,5 +1,5 @@
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from backend import models
 from backend.models import engine
@@ -31,6 +31,23 @@ session = Session()
 # user = session.query(User).filter_by(username='Sandy').first()
 # print(user.username)
 
+
+# Pydantic models
+class RideRequest(BaseModel):
+    driverid: int
+    address: str
+    cost: float
+    description: str | None = None
+    lat: float
+    long: float
+
+class putUser(BaseModel):
+    username: str
+    email: str
+    rcsid: str
+    isdriver: bool
+    password: str
+
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
@@ -57,16 +74,21 @@ def read_ride(ride_id: int):
             "long": ride.long,
         }
     else:
-        return {"error": "Ride not found"}, 404
+        raise HTTPException(status_code=404, detail="Ride not found")
 
-class RideRequest(BaseModel):
-    driverid: int
-    address: str
-    cost: float
-    description: str | None = None
-    lat: float
-    long: float
-
+@app.get("/users/{user_id}")
+def read_user(user_id: int):
+    user = session.query(models.User).filter_by(id=user_id).first()
+    if user:
+        return {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "rcsid": user.rcsid,
+            "password": user.password,
+        }
+    else:
+        raise HTTPException(status_code=404, detail="User not found")
 
 @app.post("/request_ride")
 def request_ride(ride: RideRequest):
@@ -79,7 +101,28 @@ def request_ride(ride: RideRequest):
         lat=ride.lat,
         long=ride.long,
     )
-    session.add(new_ride)
-    session.commit()
-    session.refresh(new_ride)
-    return new_ride
+    try:
+        session.add(new_ride)
+        session.commit()
+        session.refresh(new_ride)
+        return new_ride
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/add_user")
+def add_user(user: putUser):
+    new_user = models.User(
+        username=user.username,
+        email=user.email,
+        rcsid=user.rcsid,
+        password=user.password
+    )
+    try:
+        session.add(new_user)
+        session.commit()
+        session.refresh(new_user)
+        return new_user
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=400, detail=str(e))

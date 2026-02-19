@@ -4,8 +4,11 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import Float, Boolean
 import datetime
 import os
+from dotenv import load_dotenv
 
 load_dotenv()
+
+Base = declarative_base()
 
 # update postgres address as needed
 database_url = os.getenv('DATABASE_URL')
