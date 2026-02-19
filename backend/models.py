@@ -3,16 +3,15 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import Float, Boolean
 import datetime
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 Base = declarative_base()
 
-# update postgres address as needed
-database_url = 'postgresql://username:password@host/database_name'
-
-# Create an engine
+database_url = os.getenv("DATABASE_URL")
 engine = create_engine(database_url)
-
-Base = declarative_base()
 
 # example model
 class User(Base):
