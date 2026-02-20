@@ -1,73 +1,103 @@
 from typing import Annotated
-
-from fastapi import FastAPI, Depends
-from sqlalchemy.orm import sessionmaker
-from models import engine, User
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from sqlalchemy.orm import sessionmaker, Session
+from models import engine, User as DBUser
 from pydantic import BaseModel
-
-from fastapi.security import OAuth2PasswordBearer
 
 app = FastAPI()
 
+# setup OAuth2
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-# insert the data into database and start a session
-Session = sessionmaker(bind=engine)
-session = Session()
+# DB session setup
+SessionLocal = sessionmaker(bind=engine)
 
-# Example database query to ensure models are loaded
-users = session.query(User).all()
-
-# insert a user to the table during the session
-# ALWAYS COMMIT WHEN YOU ARE ADDING OR EDITING DATA IN THE DATABASE OR CHANGES WILL NOT BE SAVED
-new_user = User(username='Sandy', email='sandy@gmail.com', password='cool-password')
-session.add(new_user)
-session.commit()
-
-# THESE ARE PURELY EXAMPLES OF HOW TO QUERY THE DATABASE WE WILL PROBABLY BE DOING QUERIES IN main.py OR ANOTHER FILE
-# AND LEAVE THIS FILE PURELY FOR THE MODELS AND DATABASE CONNECTION
-# Example: query some data from the database and print
-all_users = session.query(User).all()
-for user in all_users:
-    print(user.username, user.email)
-
-# Example: Querying a specific user by their username
-user = session.query(User).filter_by(username='Sandy').first()
-print(user.username)
-
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
+# helper function for DB and authentication
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
-@app.get("/items/{item_id}")
-def read_item(item_id: int):
-    return {"item_id": item_id}
-
-
-# Working on a protected route that requires authentication
-@app.get("/login")
-def login(token: Annotated[str, Depends(oauth2_scheme)]):
-    return {"token": token}
-
-class User(BaseModel):
-    username: str
-    email: str | None = None
-    full_name: str | None = None
-    disabled: bool | None = None
-
-
-def decode_token(token):
-    return User(
-        username=token + "decoded", email="john@example.com", full_name="John Doe"
-    )
-
-
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
-    user = decode_token(token)
+def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Session = Depends(get_db)):
+    user = db.query(DBUser).filter_by(username=token).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid token")
     return user
 
+# Pydantic models for request/response validation
+class RideRequest(BaseModel):
+    driverid: int
+    address: str
+    cost: float
+    description: str | None = None
+    lat: float
+    long: float
 
-@app.get("/users/me")
-async def read_users_me(current_user: Annotated[User, Depends(get_current_user)]):
+# this model inputs user data for registration
+class UserIn(BaseModel):
+    username: str
+    email: str
+    rcsid: str
+    isdriver: bool
+    password: str
+
+# this model will output user data for login (EXCLUDES PASSWORD)
+class UserOut(BaseModel):
+    username: str
+    email: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+# login route
+@app.post("/login", response_model=Token)
+def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: Session = Depends(get_db)):
+    # Look up user in the database
+    user = db.query(DBUser).filter_by(username=form_data.username).first()
+
+    if not user or user.password != form_data.password:
+        # In production, use hashed password comparison (e.g. bcrypt) instead of plain ==
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    # In production, return a signed JWT here instead of just the username
+    return {"access_token": user.username, "token_type": "bearer"}
+
+# protected/authenticated route example
+@app.get("/users/me", response_model=UserOut)
+def read_users_me(current_user: Annotated[DBUser, Depends(get_current_user)]):
     return current_user
+
+# registration route
+@app.post("/register", response_model=UserOut)
+def register(user: UserIn, db: Session = Depends(get_db)):
+    
+    if db.query(DBUser).filter_by(username=user.username).first():
+        raise HTTPException(status_code=400, detail= "Username already exists! Try again.")
+    
+    if db.query(DBUser).filter_by(email=user.email).first():
+        raise HTTPException(status_code=400, detail= "There is already an account registered to this email! Try again.")
+    
+    new_user = DBUser(
+        username=user.username,
+        email=user.email,
+        password=user.password,
+        rcsid=user.rcsid
+    )
+
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    return new_user

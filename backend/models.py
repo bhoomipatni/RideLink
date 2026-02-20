@@ -1,9 +1,13 @@
 from sqlalchemy import Boolean, Float, create_engine, Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 import datetime
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # update postgres address as needed
-database_url = 'postgresql://username:password@host/database_name'
+database_url = os.getenv("DATABASE_URL")
 
 # Create an engine
 engine = create_engine(database_url)
