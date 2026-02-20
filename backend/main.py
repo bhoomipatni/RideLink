@@ -1,8 +1,16 @@
-from fastapi import FastAPI
+from typing import Annotated
+
+from fastapi import FastAPI, Depends
 from sqlalchemy.orm import sessionmaker
-from backend.models import engine, User
+from models import engine, User
+from pydantic import BaseModel
+
+from fastapi.security import OAuth2PasswordBearer
 
 app = FastAPI()
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
 # insert the data into database and start a session
 Session = sessionmaker(bind=engine)
 session = Session()
@@ -35,3 +43,31 @@ def read_root():
 @app.get("/items/{item_id}")
 def read_item(item_id: int):
     return {"item_id": item_id}
+
+
+# Working on a protected route that requires authentication
+@app.get("/login")
+def login(token: Annotated[str, Depends(oauth2_scheme)]):
+    return {"token": token}
+
+class User(BaseModel):
+    username: str
+    email: str | None = None
+    full_name: str | None = None
+    disabled: bool | None = None
+
+
+def decode_token(token):
+    return User(
+        username=token + "decoded", email="john@example.com", full_name="John Doe"
+    )
+
+
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+    user = decode_token(token)
+    return user
+
+
+@app.get("/users/me")
+async def read_users_me(current_user: Annotated[User, Depends(get_current_user)]):
+    return current_user
