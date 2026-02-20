@@ -4,16 +4,18 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import Float, Boolean
 import datetime
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 Base = declarative_base()
 
 # update postgres address as needed
 database_url = os.getenv('DATABASE_URL')
 
-# Create an engine
+if not database_url:
+    raise RuntimeError("DATABASE_URL environment variable is not set. Please configure DATABASE_URL before starting the application.")
 engine = create_engine(database_url)
-
-Base = declarative_base()
 
 # example model
 class User(Base):
