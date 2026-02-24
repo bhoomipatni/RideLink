@@ -23,7 +23,9 @@ CREATE TABLE "Rides"(
     "address" VARCHAR(255) NOT NULL,
     "cost" FLOAT(53) NOT NULL,
     "isactive" BOOLEAN NOT NULL,
-    "description" VARCHAR(255) NOT NULL
+    "description" VARCHAR(255) NOT NULL,
+    "lat" FLOAT(53) NOT NULL,
+    "long" FLOAT(53) NOT NULL
 );
 ALTER TABLE
     "Rides" ADD CONSTRAINT "rides_id_unique" UNIQUE("id");
