@@ -1,8 +1,11 @@
 
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from backend import models
-from backend.models import engine
+import models
+from models import engine
 from sqlalchemy.orm import sessionmaker, Session
 import datetime
 
@@ -54,10 +57,12 @@ class putUser(BaseModel):
     isdriver: bool
     password: str
 
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
+app.mount("/static", StaticFiles(directory="../frontend"), name="static")
+#templates = Jinja2Templates(directory="../frontend")
 
+@app.get("/")
+async def read_root():
+    return FileResponse("../frontend/index.html")
 
 @app.get("/items/{item_id}")
 def read_item(item_id: int):
