@@ -51,8 +51,6 @@ class RideRequest(BaseModel):
     address: str
     cost: float
     description: str | None = None
-    lat: float
-    long: float
 
 class putUser(BaseModel):
     username: str
@@ -140,13 +138,13 @@ def search_rides(address: str, date: str, db: Session = Depends(get_db)):
         json={
             "origins": [{"waypoint": {"location": {"latLng": {"latitude": lat, "longitude": long}}}}],
             "destinations": destinations,
-            "travelMode": "DRIVE",
+            "travelMode": "DRIVE", # we can change this down the line
             "routingPreference": "TRAFFIC_AWARE"
         }
     ).json()
-    # map each ride to its ETA in seconds
+    # make the dict
     eta_map = {entry["destinationIndex"]: int(entry["duration"].replace("s", "")) for entry in matrix_resp if "duration" in entry}
-    # sort rides by ETA
+    # sort by eta
     rides_with_eta = sorted(
         [{"ride": r, "eta_seconds": eta_map.get(i)} for i, r in enumerate(rides)],
         key=lambda x: x["eta_seconds"] if x["eta_seconds"] is not None else float("inf")
@@ -168,14 +166,23 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
 
 @app.post("/request_ride")
 def request_ride(ride: RideRequest, db: Session = Depends(get_db)):
+    # get lat and long from address using Google Geocoding API
+    geo = requests.get(
+        "https://maps.googleapis.com/maps/api/geocode/json",
+        params={"address": ride.address, "key": GOOGLE_API_KEY}
+    ).json()
+    if not geo["results"]:
+        raise HTTPException(status_code=400, detail="Address not found")
+    location = geo["results"][0]["geometry"]["location"]
+    lat, long = location["lat"], location["lng"]
     new_ride = models.Rides(
         driverid=ride.driverid,
         address=ride.address,
         cost=ride.cost,
         description=ride.description,
         date=datetime.datetime.now(datetime.timezone.utc),
-        lat=ride.lat,
-        long=ride.long,
+        lat=lat,
+        long=long,
     )
     try:
         db.add(new_ride)
