@@ -1,14 +1,21 @@
+import os
 from typing import Annotated
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import sessionmaker, Session
 from models import engine, User as DBUser
 from pydantic import BaseModel
+from jose import JWTError, jwt
+from datetime import datetime, timedelta, timezone
 
 app = FastAPI()
 
-# setup OAuth2
+# password protection
+# setup OAuth2 and point to the token endpoint for authentication
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # DB session setup
 SessionLocal = sessionmaker(bind=engine)
@@ -21,8 +28,27 @@ def get_db():
     finally:
         db.close()
 
+def create_access_token(data: dict) -> str:
+    to_encode = data.copy()
+    to_encode["exp"] = datetime.now(tz=timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
+# helper function to get the current user based on the JWT token provided
 def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        # decodes and verifies JWT token, extracts username from the "sub" or subject claim
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    
     user = db.query(DBUser).filter_by(username=token).first()
     if not user:
         raise HTTPException(status_code=401, detail="Invalid token")
@@ -57,9 +83,9 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
-# login route
-@app.post("/login", response_model=Token)
-def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: Session = Depends(get_db)):
+# login route (when successful, returns a JWT token) used to validate user identity for protected routes
+@app.post("/token", response_model=Token)
+def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends(OAuth2PasswordRequestForm)], db: Session = Depends(get_db)):
     # Look up user in the database
     user = db.query(DBUser).filter_by(username=form_data.username).first()
 
@@ -71,13 +97,9 @@ def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: Sessio
             headers={"WWW-Authenticate": "Bearer"}
         )
 
-    # In production, return a signed JWT here instead of just the username
-    return {"access_token": user.username, "token_type": "bearer"}
-
-# protected/authenticated route example
-@app.get("/users/me", response_model=UserOut)
-def read_users_me(current_user: Annotated[DBUser, Depends(get_current_user)]):
-    return current_user
+    # return a JWT token with the username as the subject claim
+    access_token = create_access_token(data={"sub": user.username})
+    return {"access_token": access_token, "token_type": "bearer"}
 
 # registration route
 @app.post("/register", response_model=UserOut)
