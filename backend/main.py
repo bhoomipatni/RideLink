@@ -82,7 +82,7 @@ def read_ride(ride_id: int, db: Session = Depends(get_db)):
             "description": ride.description,
             "date": ride.date.isoformat(),
             "lat": ride.lat,
-            "long": ride.long,
+            "lon": ride.lon,
         }
     else:
         raise HTTPException(status_code=404, detail="Ride not found")
@@ -96,39 +96,41 @@ GET_ETA_COUNT = _params["GET_ETA_COUNT"] # how many candidates do we send to the
 # end point example GET /search_rides/123%20Main%20St/2024-06-01T12:00:00Z  where its a str address and an iso date
 @app.get("/search_rides/{address}/{date}")
 def search_rides(address: str, date: str, db: Session = Depends(get_db)):
-    # makie a bounding box around the address using lat and long are threshold in the const above
-    # get lat/long from address using Google Geocoding API
+    # makie a bounding box around the address using lat and lon are threshold in the const above
+    # get lat/lon from address using Google Geocoding API
     geo = requests.get(
         "https://maps.googleapis.com/maps/api/geocode/json",
         params={"address": address, "key": GOOGLE_API_KEY}
     ).json()
+    if geo.get("status") != "OK" or not geo.get("results"):
+        raise HTTPException(status_code=400, detail="Address not found")
     print(geo)
     if not geo["results"]:
         raise HTTPException(status_code=400, detail="Address not found")
     location = geo["results"][0]["geometry"]["location"]
-    lat, long = location["lat"], location["lng"]
-    print(f"Searching for rides near {address} at lat {lat} and long {long}")
+    lat, lon = location["lat"], location["lng"]
+    print(f"Searching for rides near {address} at lat {lat} and lon {lon}")
     min_lat = lat - DISTANCE_LIMIT
     max_lat = lat + DISTANCE_LIMIT
-    min_long = long - DISTANCE_LIMIT
-    max_long = long + DISTANCE_LIMIT
+    min_lon = lon - DISTANCE_LIMIT
+    max_lon = lon + DISTANCE_LIMIT
     # then query the database for rides within the bounding box and are within 24 hours of the request date both ways
     rides = db.query(models.Rides).filter(
         models.Rides.lat >= min_lat,
         models.Rides.lat <= max_lat,
-        models.Rides.long >= min_long,
-        models.Rides.long <= max_long,
+        models.Rides.lon >= min_lon,
+        models.Rides.lon <= max_lon,
         models.Rides.isactive == True,
         models.Rides.date >= datetime.datetime.fromisoformat(date) - datetime.timedelta(hours=24),
         models.Rides.date <= datetime.datetime.fromisoformat(date) + datetime.timedelta(hours=24),
     ).all()
     # sort rides by distance to address in degrees so we can get the top to send to the API
-    rides.sort(key=lambda r: (r.lat - lat)**2 + (r.long - long)**2)
+    rides.sort(key=lambda r: (r.lat - lat)**2 + (r.lon - lon)**2)
     rides = rides[:GET_ETA_COUNT]
     if not rides:
         raise HTTPException(status_code=404, detail="No rides found")
     # batch Distance Matrix API call to get ETAs from each ride origin to the user address
-    destinations = [{"waypoint": {"location": {"latLng": {"latitude": r.lat, "longitude": r.long}}}} for r in rides]
+    destinations = [{"waypoint": {"location": {"latLng": {"latitude": r.lat, "longitude": r.lon}}}} for r in rides]
     matrix_resp = requests.post(
         "https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix",
         headers={
@@ -136,7 +138,7 @@ def search_rides(address: str, date: str, db: Session = Depends(get_db)):
             "X-Goog-FieldMask": "originIndex,destinationIndex,duration,distanceMeters,status"
         },
         json={
-            "origins": [{"waypoint": {"location": {"latLng": {"latitude": lat, "longitude": long}}}}],
+            "origins": [{"waypoint": {"location": {"latLng": {"latitude": lat, "longitude": lon}}}}],
             "destinations": destinations,
             "travelMode": "DRIVE", # we can change this down the line
             "routingPreference": "TRAFFIC_AWARE"
@@ -166,7 +168,7 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
 
 @app.post("/request_ride")
 def request_ride(ride: RideRequest, db: Session = Depends(get_db)):
-    # get lat and long from address using Google Geocoding API
+    # get lat and lon from address using Google Geocoding API
     geo = requests.get(
         "https://maps.googleapis.com/maps/api/geocode/json",
         params={"address": ride.address, "key": GOOGLE_API_KEY}
@@ -174,7 +176,7 @@ def request_ride(ride: RideRequest, db: Session = Depends(get_db)):
     if not geo["results"]:
         raise HTTPException(status_code=400, detail="Address not found")
     location = geo["results"][0]["geometry"]["location"]
-    lat, long = location["lat"], location["lng"]
+    lat, lon = location["lat"], location["lng"]
     new_ride = models.Rides(
         driverid=ride.driverid,
         address=ride.address,
@@ -182,7 +184,7 @@ def request_ride(ride: RideRequest, db: Session = Depends(get_db)):
         description=ride.description,
         date=datetime.datetime.now(datetime.timezone.utc),
         lat=lat,
-        long=long,
+        lon=lon,
     )
     try:
         db.add(new_ride)
@@ -199,7 +201,8 @@ def add_user(user: putUser, db: Session = Depends(get_db)):
         username=user.username,
         email=user.email,
         rcsid=user.rcsid,
-        password=user.password
+        password=user.password,
+        isdriver=user.isdriver
     )
     try:
         db.add(new_user)
