@@ -68,7 +68,6 @@ async def read_root():
 def read_item(item_id: int):
     return {"result": item_id,}
 
-
 @app.get("/rides/{ride_id}")
 def read_ride(ride_id: int, db: Session = Depends(get_db)):
     ride = db.query(models.Rides).filter_by(id=ride_id).first()
@@ -96,6 +95,7 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
             "username": user.username,
             "email": user.email,
             "rcsid": user.rcsid,
+            "isdriver": user.isdriver,
             "password": user.password,
         }
     else:
@@ -127,6 +127,7 @@ def add_user(user: putUser, db: Session = Depends(get_db)):
         username=user.username,
         email=user.email,
         rcsid=user.rcsid,
+        isdriver=user.isdriver,
         password=user.password
     )
     try:
@@ -137,3 +138,4 @@ def add_user(user: putUser, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
+
