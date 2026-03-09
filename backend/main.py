@@ -3,6 +3,12 @@ from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel, ConfigDict
 from backend import models
 from backend.models import engine
+from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
+import models
+from models import engine
 from sqlalchemy.orm import sessionmaker, Session
 import datetime
 import json
@@ -88,11 +94,13 @@ class RideWithETA(BaseModel):
 def read_root():
     return {"Hello": "World"}
 
+@app.get("/")
+async def read_root():
+    return FileResponse("../frontend/index.html")
 
 @app.get("/items/{item_id}")
 def read_item(item_id: int):
     return {"result": item_id,}
-
 
 @app.get("/rides/{ride_id}")
 def read_ride(ride_id: int, db: Session = Depends(get_db)):
