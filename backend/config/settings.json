@@ -1,0 +1,23 @@
+{
+    "strict": false,
+    "debug": true,
+    "sp": {
+        "entityId": "http://localhost:5000/metadata/",
+        "assertionConsumerService": {
+            "url": "http://localhost:5000/callback",
+            "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+        },
+        "NameIDFormat": "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified",
+        "x509cert": "-----BEGIN CERTIFICATE-----\nMIIDnzCCAoegAwIBAgIUWEIiLjUR9pg7vvh9Tc/zt1uJ0t8wDQYJKoZIhvcNAQEL\nBQAwYTELMAkGA1UEBhMCVVMxETAPBgNVBAgMCE5ldyBZb3JrMQ0wCwYDVQQHDARU\ncm95MRwwGgYDVQQKDBNSUEkgU3R1ZGVudCBQcm9qZWN0MRIwEAYDVQQDDAlsb2Nh\nbGhvc3QwHhcNMjYwMjEyMjEyOTMwWhcNMzYwMjEwMjEyOTMwWjBhMQswCQYDVQQG\nEwJVUzERMA8GA1UECAwITmV3IFlvcmsxDTALBgNVBAcMBFRyb3kxHDAaBgNVBAoM\nE1JQSSBTdHVkZW50IFByb2plY3QxEjAQBgNVBAMMCWxvY2FsaG9zdDCCASIwDQYJ\nKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMs9yhle7eqDeTfgMON9AhT1NOqCwFGU\nFfKYM4V0rZq0Pp8x66FmXi9ZhBb3vOdQwc38vvYm6QAxpmaaJ+XQK2flQYBe2yHZ\n4SGeD2Bx0j+O03qJR7KYcqo8xog4dnc5FJ9b0arO5xeofs8wkzCO6KljpZ7sRKPp\nWkwlKP0VfBv/ot8C2qp0gFhJUek7eomQ8PaiZpJ+oFA4jAjRraWclXjyWb83yCSJ\nGx47GOGaEz4nFRto+DoDQd4GiCAefkeUhN7jc7xO1X33eA6uTl+ntJ3W+FD5rKO1\nij3GBAbSeP5HafKo5YlJ556HA4WlEtJrwuldgpApYHRPUjyKhfSubRMCAwEAAaNP\nME0wCQYDVR0TBAIwADALBgNVHQ8EBAMCBaAwFAYDVR0RBA0wC4IJbG9jYWxob3N0\nMB0GA1UdDgQWBBQ24eRRS0QAMndUTHmZ3A3N2vo1uTANBgkqhkiG9w0BAQsFAAOC\nAQEAkX+nxehzQKb81hfvb9yk5De35ccifsXWPu1zphGPjTlOUXsgbeYOoXbTfHwf\nmwdSIGSIlbHlRc3sVzb5SKTuDZsI7HaSdkmZJRTd4zm1eYXiKsAALXo560DzTuKk\nGK8fnLFiUoIkxxJVmuODpPmvasE5MlN4KVeBO62BChigESjvy6OmGj1bfj++qDV/\nIi9Az4Db+Gl8kGJjhprF/TN1m4tAM4B8uDAkTXSUH3W54mUjo3SpboRt3XAYBgq5\n7ffpz0Oq4j4hUttwt4+W/avLo1TInc9Fpmo5mQ38L2Wlp7AVttiIZ/bjDEi+CmR1\nOGQNcnDX8mf3U7LsmkmedRYp3A==\n-----END CERTIFICATE-----",
+        "privateKey": "-----BEGIN PRIVATE KEY-----{key}-----END PRIVATE KEY-----"
+    },
+    "idp": {
+        "entityId": "https://shib-idp.rpi.edu/idp/shibboleth",
+        "singleSignOnService": {
+            "url": "https://shib.auth.rpi.edu/idp/profile/SAML2/Redirect/SSO",
+            "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+        },
+        "certFingerprint": "B4:C9:90:39:F5:7E:83:C0:25:FC:41:4A:EB:5F:4D:17:1D:4A:E4:39:A0:82:85:3C:E0:4A:78:96:CF:7A:CD:02",
+        "certFingerprintAlgorithm": "sha256"
+    }
+}
