@@ -26,6 +26,7 @@ class User(Base):
     isdriver = Column(Boolean, nullable=False, default=False)
     password = Column(String(100), nullable=False)
     rcsid = Column(String(20), unique=True, nullable=False)
+    isdriver = Column(Boolean, default=False, nullable=False)
 
 class Rides(Base):
     __tablename__ = 'Rides'
@@ -35,9 +36,9 @@ class Rides(Base):
     cost = Column(Float, nullable=False, default=0.0)
     isactive = Column(Boolean, default=True, nullable=False)
     description = Column(String(500), nullable=True)
-    date = Column(DateTime, default=datetime.timezone.utc, nullable=False)
+    date = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), nullable=False)
     lat = Column(Float, nullable=False)
-    long = Column(Float, nullable=False)
+    lon = Column(Float, nullable=False)
 
     
 
