@@ -1,5 +1,8 @@
 
 from fastapi import FastAPI, HTTPException, Depends
+from pydantic import BaseModel, ConfigDict
+from backend import models
+from backend.models import engine
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -62,8 +65,34 @@ class putUser(BaseModel):
     isdriver: bool
     password: str
 
-app.mount("/static", StaticFiles(directory="../frontend"), name="static")
-#templates = Jinja2Templates(directory="../frontend")
+class RideResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    driverid: int
+    address: str
+    cost: float
+    isactive: bool
+    description: str | None = None
+    date: datetime.datetime
+    lat: float
+    lon: float
+
+class UserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    username: str
+    email: str
+    rcsid: str
+    isdriver: bool
+    password: str
+
+class RideWithETA(BaseModel):
+    ride: RideResponse
+    eta_seconds: int | None = None
+
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
 
 @app.get("/")
 async def read_root():
@@ -77,17 +106,7 @@ def read_item(item_id: int):
 def read_ride(ride_id: int, db: Session = Depends(get_db)):
     ride = db.query(models.Rides).filter_by(id=ride_id).first()
     if ride:
-        return {
-            "id": ride.id,
-            "driverid": ride.driverid,
-            "address": ride.address,
-            "cost": ride.cost,
-            "isactive": ride.isactive,
-            "description": ride.description,
-            "date": ride.date.isoformat(),
-            "lat": ride.lat,
-            "lon": ride.lon,
-        }
+        return RideResponse.model_validate(ride)
     else:
         raise HTTPException(status_code=404, detail="Ride not found")
 
@@ -98,7 +117,7 @@ with open(os.path.join(os.path.dirname(__file__), "params.json")) as f:
 DISTANCE_LIMIT = _params["DISTANCE_LIMIT"] # how far away do we set teh bounding box
 GET_ETA_COUNT = _params["GET_ETA_COUNT"] # how many candidates do we send to the API to get ETAs for 
 # end point example GET /search_rides/123%20Main%20St/2024-06-01T12:00:00Z  where its a str address and an iso date
-@app.get("/search_rides/{address}/{date}")
+@app.get("/search_rides/{address}/{date}", response_model=list[RideWithETA])
 def search_rides(address: str, date: str, db: Session = Depends(get_db)):
     # makie a bounding box around the address using lat and lon are threshold in the const above
     # get lat/lon from address using Google Geocoding API
@@ -108,7 +127,6 @@ def search_rides(address: str, date: str, db: Session = Depends(get_db)):
     ).json()
     if geo.get("status") != "OK" or not geo.get("results"):
         raise HTTPException(status_code=400, detail="Address not found")
-    print(geo)
     if not geo["results"]:
         raise HTTPException(status_code=400, detail="Address not found")
     location = geo["results"][0]["geometry"]["location"]
@@ -129,13 +147,14 @@ def search_rides(address: str, date: str, db: Session = Depends(get_db)):
         models.Rides.date <= datetime.datetime.fromisoformat(date) + datetime.timedelta(hours=24),
     ).all()
     # sort rides by distance to address in degrees so we can get the top to send to the API
+    print(f"Found {len(rides)} rides in bounding box, sorting by distance and getting top {GET_ETA_COUNT} to send to API")
     rides.sort(key=lambda r: (r.lat - lat)**2 + (r.lon - lon)**2)
     rides = rides[:GET_ETA_COUNT]
     if not rides:
         raise HTTPException(status_code=404, detail="No rides found")
     # batch Distance Matrix API call to get ETAs from each ride origin to the user address
     destinations = [{"waypoint": {"location": {"latLng": {"latitude": r.lat, "longitude": r.lon}}}} for r in rides]
-    matrix_resp = requests.post(
+    raw = requests.post(
         "https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix",
         headers={
             "X-Goog-Api-Key": GOOGLE_API_KEY,
@@ -147,27 +166,23 @@ def search_rides(address: str, date: str, db: Session = Depends(get_db)):
             "travelMode": "DRIVE", # we can change this down the line
             "routingPreference": "TRAFFIC_AWARE"
         }
-    ).json()
+    )
+    matrix_resp = raw.json()
     # make the dict
-    eta_map = {entry["destinationIndex"]: int(entry["duration"].replace("s", "")) for entry in matrix_resp if "duration" in entry}
+    eta_map = {entry.get("destinationIndex", 0): int(float(entry["duration"].rstrip("s"))) for entry in matrix_resp if "duration" in entry}
     # sort by eta
     rides_with_eta = sorted(
-        [{"ride": r, "eta_seconds": eta_map.get(i)} for i, r in enumerate(rides)],
-        key=lambda x: x["eta_seconds"] if x["eta_seconds"] is not None else float("inf")
+        [RideWithETA(ride=RideResponse.model_validate(r), eta_seconds=eta_map.get(i)) for i, r in enumerate(rides)],
+        key=lambda x: x.eta_seconds if x.eta_seconds is not None else float("inf")
     )
+    #convert rides to response model Ride with ETA
+    rides_with_eta = [RideWithETA(ride=RideResponse.model_validate(r), eta_seconds=eta_map.get(i)) for i, r in enumerate(rides)]
     return rides_with_eta
 @app.get("/users/{user_id}")
 def read_user(user_id: int, db: Session = Depends(get_db)):
     user = db.query(models.User).filter_by(id=user_id).first()
     if user:
-        return {
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "rcsid": user.rcsid,
-            "isdriver": user.isdriver,
-            "password": user.password,
-        }
+        return UserResponse.model_validate(user)
     else:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -195,7 +210,7 @@ def request_ride(ride: RideRequest, db: Session = Depends(get_db)):
         db.add(new_ride)
         db.commit()
         db.refresh(new_ride)
-        return new_ride
+        return RideResponse.model_validate(new_ride)
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
@@ -213,7 +228,7 @@ def add_user(user: putUser, db: Session = Depends(get_db)):
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
-        return new_user
+        return UserResponse.model_validate(new_user)
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
