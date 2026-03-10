@@ -63,6 +63,43 @@ nav {
   color: var(--primary);
 }
 
+.dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .dropdown-toggle {
+      cursor: pointer;
+    }
+
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      right: 0;
+      background-color: white;
+      min-width: 160px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      overflow: hidden;
+      z-index: 100;
+    }
+
+    .dropdown-menu a {
+      display: block;
+      padding: 10px 14px;
+      text-decoration: none;
+      color: #1e293b;
+      font-size: 14px;
+    }
+
+    .dropdown-menu a:hover {
+      background-color: #f1f5f9;
+    }
+
+    .dropdown:hover .dropdown-menu {
+      display: block;
+    }
+
 /* Hero */
 .hero {
   padding: 5rem 1.25rem;
@@ -209,4 +246,3 @@ footer p {
     margin: 0.5rem auto;
   }
 }
-
