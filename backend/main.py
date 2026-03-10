@@ -6,9 +6,6 @@ from backend.models import engine
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
-import models
-from models import engine
 from sqlalchemy.orm import sessionmaker, Session
 import datetime
 import json
@@ -90,9 +87,6 @@ class RideWithETA(BaseModel):
     ride: RideResponse
     eta_seconds: int | None = None
 
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
 
 @app.get("/")
 async def read_root():
