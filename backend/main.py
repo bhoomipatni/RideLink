@@ -1,8 +1,6 @@
 
 from fastapi import FastAPI, HTTPException, Depends, Request
 from pydantic import BaseModel, ConfigDict
-from backend import models
-from backend.models import engine
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -22,6 +20,7 @@ load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 app = FastAPI()
+FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
 
 # Load SAML settings for auth endpoints on this main app.
 with open(os.path.join(os.path.dirname(__file__), "config", "settings.json")) as f:
@@ -129,12 +128,9 @@ class RideWithETA(BaseModel):
     eta_seconds: int | None = None
 
 @app.get("/")
-def read_root():
-    return {"Hello": "World"}
-
-@app.get("/")
 async def read_root():
-    return FileResponse("../frontend/index.html")
+    index_path = os.path.join(FRONTEND_DIR, "index.html")
+    return FileResponse(index_path)
 
 
 @app.get("/login")
@@ -300,3 +296,7 @@ def add_user(user: putUser, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# Serve frontend static assets and additional pages (post.html, ride.html, etc.)
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
