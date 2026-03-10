@@ -21,17 +21,13 @@ engine = create_engine(database_url)
 class User(Base):
     __tablename__ = 'Users'
     id = Column(Integer, primary_key=True) # postgreSQL uses serial so no need for autoincrement
-    username = Column(String(50), unique=True, nullable=False)
-    email = Column(String(100), unique=True, nullable=False)
     isdriver = Column(Boolean, nullable=False, default=False)
-    password = Column(String(100), nullable=False)
-    rcsid = Column(String(20), unique=True, nullable=False)
-    isdriver = Column(Boolean, default=False, nullable=False)
+    rcsid = Column(String(50), unique=True, nullable=False)
 
 class Rides(Base):
     __tablename__ = 'Rides'
     id = Column(Integer, primary_key=True,)  # postgreSQL uses serial so no need for autoincrement
-    driverid = Column(Integer, nullable=False)
+    driverid = Column(Integer, nullable=False) # this is just rcsid
     address = Column(String(200), nullable=False)
     cost = Column(Float, nullable=False, default=0.0)
     isactive = Column(Boolean, default=True, nullable=False)

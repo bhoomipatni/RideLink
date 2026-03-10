@@ -127,6 +127,9 @@ class RideWithETA(BaseModel):
     ride: RideResponse
     eta_seconds: int | None = None
 
+class RideListResponse(BaseModel):
+    rides: list[RideResponse]
+
 @app.get("/")
 async def read_root():
     index_path = os.path.join(FRONTEND_DIR, "index.html")
@@ -242,9 +245,11 @@ def search_rides(address: str, date: str, db: Session = Depends(get_db)):
     #convert rides to response model Ride with ETA
     rides_with_eta = [RideWithETA(ride=RideResponse.model_validate(r), eta_seconds=eta_map.get(i)) for i, r in enumerate(rides)]
     return rides_with_eta
+
+# TODO: fix code in terms of RCS ID since it's a string
 @app.get("/users/{user_id}")
-def read_user(user_id: int, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter_by(id=user_id).first()
+def read_user(user_id: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter_by(rcsid=user_id).first()
     if user:
         return UserResponse.model_validate(user)
     else:
@@ -300,3 +305,45 @@ def add_user(user: putUser, db: Session = Depends(get_db)):
 
 # Serve frontend static assets and additional pages (post.html, ride.html, etc.)
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
+
+@app.get("/upcoming_rides", response_model=RideListResponse)
+def get_upcoming_rides(db: Session = Depends(get_db)):
+    rides = db.query(models.Rides).filter(models.Rides.isactive == True).all()
+    if not rides:
+        raise HTTPException(status_code=404, detail="No upcoming rides found")
+    return RideListResponse(rides=rides)
+
+
+@app.get("/previous_rides", response_model=RideListResponse)
+def get_previous_rides(db: Session = Depends(get_db)):
+    rides = db.query(models.Rides).filter(models.Rides.isactive == False).all()
+    if not rides:
+        raise HTTPException(status_code=404, detail="No previous rides found")
+    return RideListResponse(rides=rides)
+
+@app.post("/complete_ride/{ride_id}")
+def complete_ride(ride_id: int, db: Session = Depends(get_db)):
+    ride = db.query(models.Rides).filter_by(id=ride_id).first()
+    if not ride:
+        raise HTTPException(status_code=404, detail="Ride not found")
+    ride.isactive = False
+    try:
+        db.commit()
+        db.refresh(ride)
+        return RideResponse.model_validate(ride)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+    
+@app.post("/cancel_ride/{ride_id}")
+def cancel_ride(ride_id: int, db: Session = Depends(get_db)):
+    ride = db.query(models.Rides).filter_by(id=ride_id).first()
+    if not ride:
+        raise HTTPException(status_code=404, detail="Ride not found")
+    db.delete(ride)
+    try:
+        db.commit()
+        return {"detail": "Ride cancelled successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
