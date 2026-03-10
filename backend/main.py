@@ -4,9 +4,8 @@ from pydantic import BaseModel, ConfigDict
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
-import models
-from models import engine
+from backend import models
+from backend.models import engine
 from sqlalchemy.orm import sessionmaker, Session
 import datetime
 import json
@@ -15,7 +14,6 @@ import requests
 from dotenv import load_dotenv
 from onelogin.saml2.auth import OneLogin_Saml2_Auth
 from onelogin.saml2.metadata import OneLogin_Saml2_Metadata
-
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
@@ -92,8 +90,10 @@ async def prepare_saml_request(request: Request):
 class RideRequest(BaseModel):
     driverid: int
     address: str
+    orgin: str
     cost: float
     description: str | None = None
+    date: datetime.datetime
 
 class putUser(BaseModel):
     username: str
@@ -107,6 +107,7 @@ class RideResponse(BaseModel):
     id: int
     driverid: int
     address: str
+    orgin: str
     cost: float
     isactive: bool
     description: str | None = None
@@ -161,10 +162,6 @@ def metadata():
     if errors:
         return {"errors": errors}
     return HTMLResponse(content=metadata_xml, media_type="text/xml")
-
-@app.get("/items/{item_id}")
-def read_item(item_id: int):
-    return {"result": item_id,}
 
 @app.get("/rides/{ride_id}")
 def read_ride(ride_id: int, db: Session = Depends(get_db)):
@@ -253,20 +250,25 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
 @app.post("/request_ride")
 def request_ride(ride: RideRequest, db: Session = Depends(get_db)):
     # get lat and lon from address using Google Geocoding API
+    print(f"Requesting ride with address {ride.address} and origin {ride.orgin}")
+    print(f"Requesting ride with date {ride.date}")
+    print(f"Requesting ride with driver id {ride.driverid}")
     geo = requests.get(
         "https://maps.googleapis.com/maps/api/geocode/json",
         params={"address": ride.address, "key": GOOGLE_API_KEY}
     ).json()
+    print(f"Geocoding status: {geo.get('status')}, error: {geo.get('error_message')}, results count: {len(geo.get('results', []))}")
     if not geo["results"]:
         raise HTTPException(status_code=400, detail="Address not found")
     location = geo["results"][0]["geometry"]["location"]
     lat, lon = location["lat"], location["lng"]
     new_ride = models.Rides(
         driverid=ride.driverid,
+        orgin =ride.orgin,
         address=ride.address,
         cost=ride.cost,
         description=ride.description,
-        date=datetime.datetime.now(datetime.timezone.utc),
+        date=ride.date,
         lat=lat,
         lon=lon,
     )
@@ -277,6 +279,7 @@ def request_ride(ride: RideRequest, db: Session = Depends(get_db)):
         return RideResponse.model_validate(new_ride)
     except Exception as e:
         db.rollback()
+        print(f"DB error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/add_user")
@@ -297,6 +300,12 @@ def add_user(user: putUser, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
 
-
+@app.get("/userid/{rcsid}")
+def get_userid(rcsid: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter_by(rcsid=rcsid).first()
+    if user:
+        return {"id": user.id}
+    else:
+        raise HTTPException(status_code=404, detail="User not found")
 # Serve frontend static assets and additional pages (post.html, ride.html, etc.)
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
