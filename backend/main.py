@@ -7,10 +7,10 @@ from models import engine, User as DBUser
 from pydantic import BaseModel
 from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
+import bcrypt
 
 app = FastAPI()
 
-# password protection
 # setup OAuth2 and point to the token endpoint for authentication
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -19,6 +19,44 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # DB session setup
 SessionLocal = sessionmaker(bind=engine)
+
+# Pydantic models for request/response validation
+class RideRequest(BaseModel):
+    driverid: int
+    address: str
+    cost: float
+    description: str | None = None
+    lat: float
+    long: float
+
+# this model inputs user data for registration
+class UserIn(BaseModel):
+    username: str
+    email: str
+    rcsid: str
+    isdriver: bool
+    password: str
+
+# this model will output user data for login (EXCLUDES PASSWORD)
+class UserOut(BaseModel):
+    username: str
+    email: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+# password protection
+def password_hash(password: str) -> str:
+    salt = bcrypt.gensalt()
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed_password.decode('utf-8')
+
+def verify_password(plain_password: str, db_password: str) -> bool:
+    return bcrypt.checkpw(plain_password.encode('utf-8'), db_password)
 
 # helper function for DB and authentication
 def get_db():
@@ -54,43 +92,13 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Session 
         raise HTTPException(status_code=401, detail="Invalid token")
     return user
 
-# Pydantic models for request/response validation
-class RideRequest(BaseModel):
-    driverid: int
-    address: str
-    cost: float
-    description: str | None = None
-    lat: float
-    long: float
-
-# this model inputs user data for registration
-class UserIn(BaseModel):
-    username: str
-    email: str
-    rcsid: str
-    isdriver: bool
-    password: str
-
-# this model will output user data for login (EXCLUDES PASSWORD)
-class UserOut(BaseModel):
-    username: str
-    email: str | None = None
-
-    model_config = {"from_attributes": True}
-
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
 # login route (when successful, returns a JWT token) used to validate user identity for protected routes
 @app.post("/token", response_model=Token)
 def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends(OAuth2PasswordRequestForm)], db: Session = Depends(get_db)):
     # Look up user in the database
     user = db.query(DBUser).filter_by(username=form_data.username).first()
 
-    if not user or user.password != form_data.password:
-        # In production, use hashed password comparison (e.g. bcrypt) instead of plain ==
+    if not user or not verify_password(form_data.password, user.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -114,7 +122,7 @@ def register(user: UserIn, db: Session = Depends(get_db)):
     new_user = DBUser(
         username=user.username,
         email=user.email,
-        password=user.password,
+        password=password_hash(user.password),
         rcsid=user.rcsid
     )
 
