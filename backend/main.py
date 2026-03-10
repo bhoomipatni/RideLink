@@ -1,9 +1,7 @@
 
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request
 from pydantic import BaseModel, ConfigDict
-from backend import models
-from backend.models import engine
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -15,11 +13,26 @@ import json
 import os
 import requests
 from dotenv import load_dotenv
+from onelogin.saml2.auth import OneLogin_Saml2_Auth
+from onelogin.saml2.metadata import OneLogin_Saml2_Metadata
 
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 app = FastAPI()
+FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
+
+# Load SAML settings for auth endpoints on this main app.
+with open(os.path.join(os.path.dirname(__file__), "config", "settings.json")) as f:
+    saml_settings = json.load(f)
+
+saml_private_key = os.getenv("SAML_PRIVATE_KEY")
+if not saml_private_key:
+    raise RuntimeError("SAML_PRIVATE_KEY is not set in environment")
+saml_settings["sp"]["privateKey"] = saml_private_key.replace("\\n", "\n")
+
+with open(os.path.join(os.path.dirname(__file__), "keys", "server.crt")) as f:
+    saml_settings["sp"]["x509cert"] = f.read()
 
 SessionLocal = sessionmaker(bind=engine)
 
@@ -29,6 +42,30 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def init_saml_auth(req):
+    return OneLogin_Saml2_Auth(req, saml_settings)
+
+
+def validate_sp_metadata(metadata_xml: str):
+    """Handle python3-saml validator naming differences across versions."""
+    if hasattr(OneLogin_Saml2_Metadata, "validate_metadata"):
+        return OneLogin_Saml2_Metadata.validate_metadata(metadata_xml)
+    if hasattr(OneLogin_Saml2_Metadata, "validateMetadata"):
+        return OneLogin_Saml2_Metadata.validateMetadata(metadata_xml)
+    return []
+
+
+async def prepare_saml_request(request: Request):
+    return {
+        "http_host": request.url.hostname,
+        "script_name": str(request.url.path),
+        "server_port": request.url.port or 80,
+        "get_data": dict(request.query_params),
+        "post_data": dict(await request.form()) if request.method == "POST" else {},
+        "https": "on" if request.url.scheme == "https" else "off",
+    }
 
 # Example database query to ensure models are loaded
 # users = session.query(models.User).all()
@@ -91,12 +128,39 @@ class RideWithETA(BaseModel):
     eta_seconds: int | None = None
 
 @app.get("/")
-def read_root():
-    return {"Hello": "World"}
-
-@app.get("/")
 async def read_root():
-    return FileResponse("../frontend/index.html")
+    index_path = os.path.join(FRONTEND_DIR, "index.html")
+    return FileResponse(index_path)
+
+
+@app.get("/login")
+async def login(request: Request):
+    req = await prepare_saml_request(request)
+    auth = init_saml_auth(req)
+    return RedirectResponse(url=auth.login())
+
+
+@app.post("/callback")
+async def callback(request: Request):
+    req = await prepare_saml_request(request)
+    auth = init_saml_auth(req)
+    auth.process_response()
+    errors = auth.get_errors()
+    if errors:
+        return {"errors": errors}
+    return {
+        "name_id": auth.get_nameid(),
+        "attributes": auth.get_attributes(),
+    }
+
+
+@app.get("/metadata", response_class=HTMLResponse)
+def metadata():
+    metadata_xml = OneLogin_Saml2_Metadata.builder(saml_settings["sp"], None, True)
+    errors = validate_sp_metadata(metadata_xml)
+    if errors:
+        return {"errors": errors}
+    return HTMLResponse(content=metadata_xml, media_type="text/xml")
 
 @app.get("/items/{item_id}")
 def read_item(item_id: int):
@@ -232,3 +296,7 @@ def add_user(user: putUser, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# Serve frontend static assets and additional pages (post.html, ride.html, etc.)
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
