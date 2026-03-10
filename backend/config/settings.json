@@ -2,9 +2,9 @@
     "strict": false,
     "debug": true,
     "sp": {
-        "entityId": "http://localhost:5000/metadata/",
+        "entityId": "http://localhost:8000/metadata/",
         "assertionConsumerService": {
-            "url": "http://localhost:5000/callback",
+            "url": "http://localhost:8000/callback",
             "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
         },
         "NameIDFormat": "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified",

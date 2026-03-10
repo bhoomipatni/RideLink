@@ -1,9 +1,10 @@
 import os
 import json
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from dotenv import load_dotenv
 from onelogin.saml2.auth import OneLogin_Saml2_Auth
+from onelogin.saml2.metadata import OneLogin_Saml2_Metadata
 
 load_dotenv()  # loads .env with SAML_PRIVATE_KEY
 
@@ -24,6 +25,15 @@ with open("keys/server.crt") as f:
 # Initialize SAML auth (helper)
 def init_saml_auth(req):
     return OneLogin_Saml2_Auth(req, settings)
+
+
+def validate_sp_metadata(metadata_xml: str):
+    """Handle python3-saml validator naming differences across versions."""
+    if hasattr(OneLogin_Saml2_Metadata, "validate_metadata"):
+        return OneLogin_Saml2_Metadata.validate_metadata(metadata_xml)
+    if hasattr(OneLogin_Saml2_Metadata, "validateMetadata"):
+        return OneLogin_Saml2_Metadata.validateMetadata(metadata_xml)
+    return []
 
 # Helper to convert FastAPI request to what python3-saml expects
 async def prepare_flask_request(request: Request):
@@ -47,8 +57,8 @@ def home():
 async def login(request: Request):
     req = await prepare_flask_request(request)
     auth = init_saml_auth(req)
-    # Redirect to IdP login
-    return {"login_url": auth.login()}
+    # Redirect the browser directly to the identity provider login.
+    return RedirectResponse(url=auth.login())
 
 @app.post("/callback")
 async def callback(request: Request):
@@ -65,9 +75,8 @@ async def callback(request: Request):
 
 @app.get("/metadata", response_class=HTMLResponse)
 def metadata():
-    from onelogin.saml2.metadata import OneLogin_Saml2_Metadata
     metadata = OneLogin_Saml2_Metadata.builder(settings["sp"], None, True)
-    errors = OneLogin_Saml2_Metadata.validate_metadata(metadata)
+    errors = validate_sp_metadata(metadata)
     if len(errors) > 0:
         return {"errors": errors}
     return HTMLResponse(content=metadata, media_type="text/xml")
