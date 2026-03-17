@@ -246,7 +246,24 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
         return UserResponse.model_validate(user)
     else:
         raise HTTPException(status_code=404, detail="User not found")
+@app.get("/riders_in_ride/{ride_id}")
+def riders_in_ride(ride_id: int, db: Session = Depends(get_db)):
+    ride = db.query(models.Rides).filter_by(id=ride_id).first()
+    if(not ride):
+        raise HTTPException(status_code=404, detail="Ride not found")
+    riders = ride.riders if ride else ["REMOVE IN PROD TEST FOR CRASH"]
+    return {"riders": json.stringify(riders)}
 
+@app.get("/users_rides/{user_id}")
+def users_rides(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter_by(id=user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    rides = db.query(models.Rides).filter_by(driverid=user_id).all()
+    return [RideResponse.model_validate(r) for r in rides]
+
+
+    
 @app.post("/request_ride")
 def request_ride(ride: RideRequest, db: Session = Depends(get_db)):
     # get lat and lon from address using Google Geocoding API
@@ -299,12 +316,9 @@ def add_user(user: putUser, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.get("/userid/{rcsid}")
-def get_userid(rcsid: str, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter_by(rcsid=rcsid).first()
-    if user:
-        return {"id": user.id}
-    else:
-        raise HTTPException(status_code=404, detail="User not found")
+
 # Serve frontend static assets and additional pages (post.html, ride.html, etc.)
+
+
+
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
