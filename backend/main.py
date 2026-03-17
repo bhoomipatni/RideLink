@@ -257,7 +257,6 @@ def request_ride(ride: RideRequest, db: Session = Depends(get_db)):
         "https://maps.googleapis.com/maps/api/geocode/json",
         params={"address": ride.address, "key": GOOGLE_API_KEY}
     ).json()
-    print(f"Geocoding status: {geo.get('status')}, error: {geo.get('error_message')}, results count: {len(geo.get('results', []))}")
     if not geo["results"]:
         raise HTTPException(status_code=400, detail="Address not found")
     location = geo["results"][0]["geometry"]["location"]
