@@ -1,3 +1,5 @@
+<!-- this is the html file that can display a specific trip's full, detailed info -->
+<!DOCTYPE html>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,10 +10,8 @@
 </head>
 <body>
 
-  <header>
-    <div class="container">
-      <nav>
-        <div class="logo">
+  <nav>
+    <div class="logo">
           <a href="index.html">
             <img src="RideLink.png" alt="RideLink logo" />
           </a>
@@ -22,23 +22,37 @@
           <a href="trips.html">My Trips</a>
           <a href="info.html">How It Works</a>
           <a href="#contact">Contact Us</a>
-          <a href="#account">My Account</a>
           <div class="dropdown">
             <a class="dropdown-toggle">My Account ▾</a>
             <div class="dropdown-menu">
               <a href="/login">Log In</a>
               <a href="#signup">Sign Up</a>
               <a href="#settings">Settings</a>
+
+              <header class="top-bar">
+                <div class="brand">
+                  <div class="logo">RL</div>
+                  <div>
+                    <img src="static/RideLink.png" width="150" height="80">
+                  </div>
+                </div>
             </div>
           </div>
-        </div>
-      </nav>
-    </div>
-  </header>
-  <h1>Find a Ride</h1>
-  <footer id="contact">
-    <p>© 2026 RideLink. Built for students.</p>
-  </footer>
+        </nav>
+
+  <div class="trip-detail">
+    <h1>Your Trip: <span id="destination"></span></h1>
+    <h3 id="dateNtime"></h3>
+    <h3 id="driver"></h3>
+
+    <h2>Trip Details:</h2>
+    <h3 id="distance"></h3>
+    <h3 id="cost"></h3>
+    <h3 id="payment"></h3>
+    <h3 id="riders"></h3>
+  </div>
+
+  <script src="script.js"></script>
 
 </body>
 </html>

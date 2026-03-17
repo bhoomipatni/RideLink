@@ -1,0 +1,26 @@
+[
+    {
+        "id": 1,
+        "destination": "Airport",
+        "day": "Monday",
+        "date": "March 15, 2026",
+        "time": "6:42 AM",
+        "driver": "Marty",
+        "distance": 14.2,
+        "cost": 24.50,
+        "payment_method": "Venmo",
+        "num_riders": 2
+    },
+    {
+        "id": 2,
+        "destination": "Downtown",
+        "day": "Tuesday",
+        "date": "March 10, 2026",
+        "time": "7:15 PM",
+        "driver": "Schmidt",
+        "distance": 32.8,
+        "cost": 48.20,
+        "payment_method": "PayPal",
+        "num_riders": 1
+    }
+]
