@@ -89,19 +89,20 @@ async def prepare_saml_request(request: Request):
 
 
 # Pydantic models
+# driver posts a ride with address, cost, description
 class RideRequest(BaseModel):
     driverid: int
     address: str
     cost: float
     description: str | None = None
 
-class putUser(BaseModel):
+# adds a user to the database with username, rcsid, and isdriver boolean
+class addUser(BaseModel):
     username: str
-    email: str
     rcsid: str
     isdriver: bool
-    password: str
 
+# returns json with ride info
 class RideResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
@@ -114,19 +115,20 @@ class RideResponse(BaseModel):
     lat: float
     lon: float
 
-class UserResponse(BaseModel):
+# returns json with user info
+class UserInfo(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    id: int
     username: str
-    email: str
     rcsid: str
     isdriver: bool
-    password: str
 
+# this is response model for search function that returns a dict with ride info and eta in seconds to the ride
+# maybe put config in here
 class RideWithETA(BaseModel):
     ride: RideResponse
     eta_seconds: int | None = None
 
+# this is the response model for upcoming/previous rides
 class RideListResponse(BaseModel):
     rides: list[RideResponse]
 
@@ -164,10 +166,6 @@ def metadata():
     if errors:
         return {"errors": errors}
     return HTMLResponse(content=metadata_xml, media_type="text/xml")
-
-@app.get("/items/{item_id}")
-def read_item(item_id: int):
-    return {"result": item_id,}
 
 @app.get("/rides/{ride_id}")
 def read_ride(ride_id: int, db: Session = Depends(get_db)):
@@ -246,12 +244,12 @@ def search_rides(address: str, date: str, db: Session = Depends(get_db)):
     rides_with_eta = [RideWithETA(ride=RideResponse.model_validate(r), eta_seconds=eta_map.get(i)) for i, r in enumerate(rides)]
     return rides_with_eta
 
-# TODO: fix code in terms of RCS ID since it's a string
+
 @app.get("/users/{user_id}")
 def read_user(user_id: str, db: Session = Depends(get_db)):
     user = db.query(models.User).filter_by(rcsid=user_id).first()
     if user:
-        return UserResponse.model_validate(user)
+        return UserInfo.model_validate(user)
     else:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -285,19 +283,17 @@ def request_ride(ride: RideRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/add_user")
-def add_user(user: putUser, db: Session = Depends(get_db)):
+def add_user(user: addUser, db: Session = Depends(get_db)):
     new_user = models.User(
         username=user.username,
-        email=user.email,
         rcsid=user.rcsid,
-        password=user.password,
         isdriver=user.isdriver
     )
     try:
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
-        return UserResponse.model_validate(new_user)
+        return UserInfo.model_validate(new_user)
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
@@ -306,20 +302,36 @@ def add_user(user: putUser, db: Session = Depends(get_db)):
 # Serve frontend static assets and additional pages (post.html, ride.html, etc.)
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 
+# returns current and any upcoming rides
 @app.get("/upcoming_rides", response_model=RideListResponse)
 def get_upcoming_rides(db: Session = Depends(get_db)):
-    rides = db.query(models.Rides).filter(models.Rides.isactive == True).all()
-    if not rides:
+    user = db.query(models.User).filter_by(rcsid="sandy").first() # TODO: change to actual user from auth
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    rides = user.rides
+    return_rides = []
+    for ride in rides:
+        if ride.date > datetime.datetime.now(datetime.timezone.utc) and ride.isactive:
+            return_rides.append(ride)
+    if not return_rides:
         raise HTTPException(status_code=404, detail="No upcoming rides found")
-    return RideListResponse(rides=rides)
+    return RideListResponse(rides=return_rides)
 
-
+# returns past rides that are no longer active
 @app.get("/previous_rides", response_model=RideListResponse)
 def get_previous_rides(db: Session = Depends(get_db)):
-    rides = db.query(models.Rides).filter(models.Rides.isactive == False).all()
-    if not rides:
+    user = db.query(models.User).filter_by(rcsid="sandy").first() # TODO: change to actual user from auth
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    rides = user.rides
+    return_rides = []
+    for ride in rides:
+        if ride.date < datetime.datetime.now(datetime.timezone.utc) and not ride.isactive:
+            return_rides.append(ride)
+    if not return_rides:
         raise HTTPException(status_code=404, detail="No previous rides found")
-    return RideListResponse(rides=rides)
+    return RideListResponse(rides=return_rides)
+
 
 @app.post("/complete_ride/{ride_id}")
 def complete_ride(ride_id: int, db: Session = Depends(get_db)):
@@ -334,7 +346,7 @@ def complete_ride(ride_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
-    
+
 @app.post("/cancel_ride/{ride_id}")
 def cancel_ride(ride_id: int, db: Session = Depends(get_db)):
     ride = db.query(models.Rides).filter_by(id=ride_id).first()

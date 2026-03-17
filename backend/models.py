@@ -1,3 +1,5 @@
+from ctypes import Array
+
 from sqlalchemy import Boolean, Float, create_engine, Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -20,9 +22,9 @@ engine = create_engine(database_url)
 # example model
 class User(Base):
     __tablename__ = 'Users'
-    id = Column(Integer, primary_key=True) # postgreSQL uses serial so no need for autoincrement
     isdriver = Column(Boolean, nullable=False, default=False)
     rcsid = Column(String(50), unique=True, nullable=False)
+    rides = Column(Array(Integer), nullable=True) # this is just a list of ride ids, can be null if no rides
 
 class Rides(Base):
     __tablename__ = 'Rides'
@@ -35,6 +37,7 @@ class Rides(Base):
     date = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), nullable=False)
     lat = Column(Float, nullable=False)
     lon = Column(Float, nullable=False)
+    riders = Column(Array(String), nullable=True) # this is just a list of rider userids, can be null if no riders
 
     
 
