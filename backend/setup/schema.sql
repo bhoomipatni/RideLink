@@ -5,6 +5,7 @@ CREATE TABLE "Users"(
     "rcsid" VARCHAR(255) NOT NULL,
     "isdriver" BOOLEAN NOT NULL,
     "password" VARCHAR(255) NOT NULL
+    "rides" BIGINT[] NOT NULL
 );
 CREATE INDEX "users_id_username_rcsid_index" ON
     "Users"("id", "username", "rcsid");
