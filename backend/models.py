@@ -15,7 +15,7 @@ database_url = os.getenv('DATABASE_URL')
 
 if not database_url:
     raise RuntimeError("DATABASE_URL environment variable is not set. Please configure DATABASE_URL before starting the application.")
-engine = create_engine(database_url)
+engine = create_engine(database_url, pool_pre_ping=True)
 
 # example model
 class User(Base):
