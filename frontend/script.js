@@ -3,13 +3,20 @@ async function loadIndTrip() {
     //get the id from the URL
     const id = new URLSearchParams(location.search).get('id');
 
+    //DON'T DELETE
     //fetch specific trip from your backend
-    const response = await fetch(`/api/trips/${id}`);
-    const trip = await response.json();
+    //const response = await fetch(`/api/trips/${id}`);
+    //const trip = await response.json();
+
+    //this is just for testing css and formatting, the actual js script should fetch from backend databse thingy
+    const response = await fetch('test.json');
+    const trips = await response.json();
+    const trip = trips.find(t => t.id === parseInt(id));
+
 
     //get relevant data
     document.getElementById('destination').textContent = trip.destination;
-    document.getElementById('dateNtime').textContent = `${trip.dayname} ${trip.date} @ ${trip.time}`;
+    document.getElementById('dateNtime').textContent = `${trip.day} ${trip.date} @ ${trip.time}`;
     document.getElementById('driver').textContent = `with ${trip.driver}`;
     document.getElementById('distance').textContent = `${trip.distance} miles`;
     document.getElementById('cost').textContent = `$${trip.cost}`;
