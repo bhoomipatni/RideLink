@@ -1,4 +1,4 @@
-from ctypes import Array
+from sqlalchemy.dialects.postgresql import ARRAY
 
 from sqlalchemy import Boolean, Float, create_engine, Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
@@ -23,8 +23,8 @@ engine = create_engine(database_url)
 class User(Base):
     __tablename__ = 'Users'
     isdriver = Column(Boolean, nullable=False, default=False)
-    rcsid = Column(String(50), unique=True, nullable=False)
-    rides = Column(Array(Integer), nullable=True) # this is just a list of ride ids, can be null if no rides
+    rcsid = Column(String(50), primary_key=True, unique=True, nullable=False)
+    rides = Column(ARRAY(Integer), nullable=True) # this is just a list of ride ids, can be null if no rides
 
 class Rides(Base):
     __tablename__ = 'Rides'
@@ -37,7 +37,7 @@ class Rides(Base):
     date = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), nullable=False)
     lat = Column(Float, nullable=False)
     lon = Column(Float, nullable=False)
-    riders = Column(Array(String), nullable=True) # this is just a list of rider userids, can be null if no riders
+    riders = Column(ARRAY(String), nullable=True) # this is just a list of rider userids, can be null if no riders
 
     
 

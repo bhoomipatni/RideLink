@@ -1,12 +1,11 @@
-
 from fastapi import FastAPI, HTTPException, Depends, Request
 from pydantic import BaseModel, ConfigDict
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-import models
-from models import engine
+from . import models
+from .models import engine
 from sqlalchemy.orm import sessionmaker, Session
 import datetime
 import json
@@ -15,6 +14,7 @@ import requests
 from dotenv import load_dotenv
 from onelogin.saml2.auth import OneLogin_Saml2_Auth
 from onelogin.saml2.metadata import OneLogin_Saml2_Metadata
+import jwt
 
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
@@ -67,26 +67,6 @@ async def prepare_saml_request(request: Request):
         "https": "on" if request.url.scheme == "https" else "off",
     }
 
-# Example database query to ensure models are loaded
-# users = session.query(models.User).all()
-
-# insert a user to the table during the session
-# ALWAYS COMMIT WHEN YOU ARE ADDING OR EDITING DATA IN THE DATABASE OR CHANGES WILL NOT BE SAVED
-# new_user = models.User(username='Sandy', email='sandy@gmail.com', password='cool-password')
-# models.session.add(new_user)
-# models.session.commit()
-
-# THESE ARE PURELY EXAMPLES OF HOW TO QUERY THE DATABASE WE WILL PROBABLY BE DOING QUERIES IN main.py OR ANOTHER FILE
-# AND LEAVE THIS FILE PURELY FOR THE MODELS AND DATABASE CONNECTION
-# Example: query some data from the database and print
-# all_users = session.query(User).all()
-# for user in all_users:
-#     print(user.username, user.email)
-
-# Example: Querying a specific user by their username
-# user = session.query(User).filter_by(username='Sandy').first()
-# print(user.username)
-
 
 # Pydantic models
 # driver posts a ride with address, cost, description
@@ -95,12 +75,6 @@ class RideRequest(BaseModel):
     address: str
     cost: float
     description: str | None = None
-
-# adds a user to the database with username, rcsid, and isdriver boolean
-class addUser(BaseModel):
-    username: str
-    rcsid: str
-    isdriver: bool
 
 # returns json with ride info
 class RideResponse(BaseModel):
@@ -115,8 +89,14 @@ class RideResponse(BaseModel):
     lat: float
     lon: float
 
+# adds a user to the database with username, rcsid, and isdriver boolean
+class UserInput(BaseModel):
+    username: str
+    rcsid: str
+    isdriver: bool
+
 # returns json with user info
-class UserInfo(BaseModel):
+class UserOutput(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     username: str
     rcsid: str
@@ -151,6 +131,12 @@ async def callback(request: Request):
     auth = init_saml_auth(req)
     auth.process_response()
     errors = auth.get_errors()
+
+    rcsid = auth.get_nameid()
+    # token = jwt.encode({"rcsid": rcsid}, os.getenv("SESSION_SECRET"), algorithm="HS256")
+    # response = RedirectResponse(url="/", status_code=302)
+    # response.set_cookie("session", token)
+    # return response
     if errors:
         return {"errors": errors}
     return {
@@ -158,6 +144,21 @@ async def callback(request: Request):
         "attributes": auth.get_attributes(),
     }
 
+# def get_current_user(request: Request, db: Session = Depends(get_db)):
+#     token = request.cookies.get("token")
+#     if not token:
+#         raise HTTPException(status_code=401, detail="Not authenticated")
+#     try:
+#         payload = jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=["HS256"])
+#         rcsid = str(payload["rcsid"])
+#     except jwt.PyJWTError:
+#         raise HTTPException(status_code=401, detail="Invalid token")
+#     if not rcsid:
+#         raise HTTPException(status_code=401, detail="Not authenticated")
+#     user = db.query(models.User).filter_by(rcsid=rcsid).first()
+#     if not user:
+#         raise HTTPException(status_code=404, detail="User not found")
+#     return user
 
 @app.get("/metadata", response_class=HTMLResponse)
 def metadata():
@@ -249,7 +250,7 @@ def search_rides(address: str, date: str, db: Session = Depends(get_db)):
 def read_user(user_id: str, db: Session = Depends(get_db)):
     user = db.query(models.User).filter_by(rcsid=user_id).first()
     if user:
-        return UserInfo.model_validate(user)
+        return UserOutput.model_validate(user)
     else:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -283,7 +284,7 @@ def request_ride(ride: RideRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/add_user")
-def add_user(user: addUser, db: Session = Depends(get_db)):
+def add_user(user: UserInput, db: Session = Depends(get_db)):
     new_user = models.User(
         username=user.username,
         rcsid=user.rcsid,
@@ -293,7 +294,7 @@ def add_user(user: addUser, db: Session = Depends(get_db)):
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
-        return UserInfo.model_validate(new_user)
+        return UserOutput.model_validate(new_user)
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
@@ -308,14 +309,11 @@ def get_upcoming_rides(db: Session = Depends(get_db)):
     user = db.query(models.User).filter_by(rcsid="sandy").first() # TODO: change to actual user from auth
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    rides = user.rides
-    return_rides = []
-    for ride in rides:
-        if ride.date > datetime.datetime.now(datetime.timezone.utc) and ride.isactive:
-            return_rides.append(ride)
-    if not return_rides:
+    rides = db.query(user.rides).filter(models.Rides.date > datetime.datetime.now(datetime.timezone.utc), models.Rides.isactive == True).all()
+    
+    if not rides:
         raise HTTPException(status_code=404, detail="No upcoming rides found")
-    return RideListResponse(rides=return_rides)
+    return RideListResponse(rides=rides)
 
 # returns past rides that are no longer active
 @app.get("/previous_rides", response_model=RideListResponse)
@@ -323,14 +321,11 @@ def get_previous_rides(db: Session = Depends(get_db)):
     user = db.query(models.User).filter_by(rcsid="sandy").first() # TODO: change to actual user from auth
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    rides = user.rides
-    return_rides = []
-    for ride in rides:
-        if ride.date < datetime.datetime.now(datetime.timezone.utc) and not ride.isactive:
-            return_rides.append(ride)
-    if not return_rides:
+    rides = db.query(user.rides).filter(models.Rides.date < datetime.datetime.now(datetime.timezone.utc), models.Rides.isactive == False).all()
+    
+    if not rides:
         raise HTTPException(status_code=404, detail="No previous rides found")
-    return RideListResponse(rides=return_rides)
+    return RideListResponse(rides=rides)
 
 
 @app.post("/complete_ride/{ride_id}")
