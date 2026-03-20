@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI, HTTPException, Depends, Request
 from pydantic import BaseModel, ConfigDict
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
@@ -126,7 +125,8 @@ class UserResponse(BaseModel):
 
 class RideWithETA(BaseModel):
     ride: RideResponse
-    eta_seconds: int | None = None
+    detour_eta: int | None = None # this is ETA from the rides arrival point to the users desiered arrival point
+    full_eta: int | None = None #This is the eta from the rides starting point ot ending poiint
 
 @app.get("/")
 async def read_root():
@@ -176,7 +176,8 @@ def read_ride(ride_id: int, db: Session = Depends(get_db)):
 with open(os.path.join(os.path.dirname(__file__), "params.json")) as f:
     _params = json.load(f)
 DISTANCE_LIMIT = _params["DISTANCE_LIMIT"] # how far away do we set teh bounding box
-GET_ETA_COUNT = _params["GET_ETA_COUNT"] # how many candidates do we send to the API to get ETAs for 
+GET_ETA_COUNT = _params["GET_ETA_COUNT"] # how many candidates do we send to the API to get ETAs for
+ROUTING_PREF = "TRAFFIC_AWARE" if _params["TRAFFIC_AWARE"] else "TRAFFIC_UNAWARE"
 # end point example GET /search_rides/123%20Main%20St/2024-06-01T12:00:00Z  where its a str address and an iso date
 @app.get("/search_rides/{address}/{date}", response_model=list[RideWithETA])
 def search_rides(address: str, date: str, db: Session = Depends(get_db)):
@@ -225,19 +226,36 @@ def search_rides(address: str, date: str, db: Session = Depends(get_db)):
             "origins": [{"waypoint": {"location": {"latLng": {"latitude": lat, "longitude": lon}}}}],
             "destinations": destinations,
             "travelMode": "DRIVE", # we can change this down the line
-            "routingPreference": "TRAFFIC_AWARE"
+            "routingPreference": ROUTING_PREF
         }
     )
     matrix_resp = raw.json()
-    # make the dict
-    eta_map = {entry.get("destinationIndex", 0): int(float(entry["duration"].rstrip("s"))) for entry in matrix_resp if "duration" in entry}
-    # sort by eta
+    # get each ride's overall ETA (origin -> address)
+    trip_resp = requests.post(
+        "https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix",
+        headers={
+            "X-Goog-Api-Key": GOOGLE_API_KEY,
+            "X-Goog-FieldMask": "originIndex,destinationIndex,duration,status"
+        },
+        json={
+            "origins": [{"waypoint": {"address": r.orgin}} for r in rides],
+            "destinations": [{"waypoint": {"address": r.address}} for r in rides],
+            "travelMode": "DRIVE",
+            "routingPreference": ROUTING_PREF
+        }
+    ).json()
+    # make the dict: detour_eta (user detour) + full_eta (ride origin->dest)
+    eta_map = {}
+    for i, r in enumerate(rides):
+        eta_map[i] = {
+            "detour_eta": next((int(float(e["duration"].rstrip("s"))) for e in matrix_resp if "duration" in e and e.get("destinationIndex", 0) == i), None),
+            "full_eta": next((int(float(e["duration"].rstrip("s"))) for e in trip_resp if "duration" in e and e.get("originIndex", 0) == i and e.get("destinationIndex", 0) == i), None)
+        }
+    # sort by full_eta
     rides_with_eta = sorted(
-        [RideWithETA(ride=RideResponse.model_validate(r), eta_seconds=eta_map.get(i)) for i, r in enumerate(rides)],
-        key=lambda x: x.eta_seconds if x.eta_seconds is not None else float("inf")
+        [RideWithETA(ride=RideResponse.model_validate(r), detour_eta=eta_map[i]["detour_eta"], full_eta=eta_map[i]["full_eta"]) for i, r in enumerate(rides)],
+        key=lambda x: x.full_eta if x.full_eta is not None else float("inf")
     )
-    #convert rides to response model Ride with ETA
-    rides_with_eta = [RideWithETA(ride=RideResponse.model_validate(r), eta_seconds=eta_map.get(i)) for i, r in enumerate(rides)]
     return rides_with_eta
 @app.get("/users/{user_id}")
 def read_user(user_id: int, db: Session = Depends(get_db)):
@@ -251,7 +269,7 @@ def riders_in_ride(ride_id: int, db: Session = Depends(get_db)):
     ride = db.query(models.Rides).filter_by(id=ride_id).first()
     if(not ride):
         raise HTTPException(status_code=404, detail="Ride not found")
-    riders = ride.riders if ride else ["REMOVE IN PROD TEST FOR CRASH"]
+    riders = ride.riders if ride else ["No riders found"]
     return {"riders": json.stringify(riders)}
 
 @app.get("/users_rides/{user_id}")
@@ -261,7 +279,6 @@ def users_rides(user_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
     rides = db.query(models.Rides).filter_by(driverid=user_id).all()
     return [RideResponse.model_validate(r) for r in rides]
-
 
     
 @app.post("/request_ride")
