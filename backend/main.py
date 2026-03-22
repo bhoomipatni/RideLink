@@ -130,35 +130,35 @@ async def callback(request: Request):
     req = await prepare_saml_request(request)
     auth = init_saml_auth(req)
     auth.process_response()
-    errors = auth.get_errors()
+    # errors = auth.get_errors()
 
     rcsid = auth.get_nameid()
-    # token = jwt.encode({"rcsid": rcsid}, os.getenv("SESSION_SECRET"), algorithm="HS256")
-    # response = RedirectResponse(url="/", status_code=302)
-    # response.set_cookie("session", token)
-    # return response
-    if errors:
-        return {"errors": errors}
-    return {
-        "name_id": auth.get_nameid(),
-        "attributes": auth.get_attributes(),
-    }
+    token = jwt.encode({"rcsid": rcsid}, os.getenv("SESSION_SECRET"), algorithm="HS256")
+    response = RedirectResponse(url="/", status_code=302)
+    response.set_cookie("session", token)
+    return response
+    # if errors:
+    #     return {"errors": errors}
+    # return {
+    #     "name_id": auth.get_nameid(),
+    #     "attributes": auth.get_attributes(),
+    # }
 
-# def get_current_user(request: Request, db: Session = Depends(get_db)):
-#     token = request.cookies.get("token")
-#     if not token:
-#         raise HTTPException(status_code=401, detail="Not authenticated")
-#     try:
-#         payload = jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=["HS256"])
-#         rcsid = str(payload["rcsid"])
-#     except jwt.PyJWTError:
-#         raise HTTPException(status_code=401, detail="Invalid token")
-#     if not rcsid:
-#         raise HTTPException(status_code=401, detail="Not authenticated")
-#     user = db.query(models.User).filter_by(rcsid=rcsid).first()
-#     if not user:
-#         raise HTTPException(status_code=404, detail="User not found")
-#     return user
+def get_current_user(request: Request, db: Session = Depends(get_db)):
+    token = request.cookies.get("token")
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    try:
+        payload = jwt.decode(token, os.getenv("SESSION_SECRET"), algorithms=["HS256"])
+        rcsid = str(payload["rcsid"])
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    if not rcsid:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    user = db.query(models.User).filter_by(rcsid=rcsid).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
 
 @app.get("/metadata", response_class=HTMLResponse)
 def metadata():
@@ -306,10 +306,14 @@ app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 # returns current and any upcoming rides
 @app.get("/upcoming_rides", response_model=RideListResponse)
 def get_upcoming_rides(db: Session = Depends(get_db)):
-    user = db.query(models.User).filter_by(rcsid="sandy").first() # TODO: change to actual user from auth
+    user_id = get_current_user(Request, db).rcsid
+    user = db.query(models.User).filter_by(rcsid=user_id).first()
+    
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    rides = db.query(user.rides).filter(models.Rides.date > datetime.datetime.now(datetime.timezone.utc), models.Rides.isactive == True).all()
+    rides = db.query(user.rides).filter(
+        models.Rides.date > datetime.datetime.now(datetime.timezone.utc),
+        models.Rides.isactive == True).all()
     
     if not rides:
         raise HTTPException(status_code=404, detail="No upcoming rides found")
@@ -318,10 +322,14 @@ def get_upcoming_rides(db: Session = Depends(get_db)):
 # returns past rides that are no longer active
 @app.get("/previous_rides", response_model=RideListResponse)
 def get_previous_rides(db: Session = Depends(get_db)):
-    user = db.query(models.User).filter_by(rcsid="sandy").first() # TODO: change to actual user from auth
+    user_id = get_current_user(Request, db).rcsid
+    user = db.query(models.User).filter_by(rcsid=user_id).first()
+
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    rides = db.query(user.rides).filter(models.Rides.date < datetime.datetime.now(datetime.timezone.utc), models.Rides.isactive == False).all()
+    rides = db.query(user.rides).filter(
+        models.Rides.date < datetime.datetime.now(datetime.timezone.utc), 
+        models.Rides.isactive == False).all()
     
     if not rides:
         raise HTTPException(status_code=404, detail="No previous rides found")

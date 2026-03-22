@@ -29,7 +29,7 @@ class User(Base):
 class Rides(Base):
     __tablename__ = 'Rides'
     id = Column(Integer, primary_key=True,)  # postgreSQL uses serial so no need for autoincrement
-    driverid = Column(Integer, nullable=False) # this is just rcsid
+    driverid = Column(String(200), nullable=False)
     address = Column(String(200), nullable=False)
     cost = Column(Float, nullable=False, default=0.0)
     isactive = Column(Boolean, default=True, nullable=False)
@@ -37,7 +37,7 @@ class Rides(Base):
     date = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), nullable=False)
     lat = Column(Float, nullable=False)
     lon = Column(Float, nullable=False)
-    riders = Column(ARRAY(String), nullable=True) # this is just a list of rider userids, can be null if no riders
+    riders = Column(ARRAY(User), nullable=True) # this is just a list of rider userids, can be null if no riders
 
     
 
