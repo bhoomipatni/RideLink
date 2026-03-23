@@ -1,0 +1,151 @@
+<h1>Payment Methods</h1>
+
+<p style="color: gray; font-size: 0.9rem;">
+  RideLink does not process payments. Payments are completed directly in Venmo or PayPal.
+</p>
+
+<!-- ================= VENMO ================= -->
+<h2>Venmo</h2>
+
+<label>Enter Venmo Username:</label>
+<input type="text" id="venmoUsername" placeholder="@username">
+
+<p id="venmoPreview" style="color: gray;"></p>
+
+<button id="venmoTest">Test in Venmo</button>
+
+<br><br>
+
+<label>
+  <input type="checkbox" id="venmoConfirm">
+  I confirm this is my Venmo account
+</label>
+
+<br><br>
+
+<button id="venmoSave" disabled>Save</button>
+<p id="venmoStatus"></p>
+
+<hr>
+
+<!-- ================= PAYPAL ================= -->
+<h2>PayPal</h2>
+
+<label>Enter PayPal Email:</label>
+<input type="email" id="paypalEmail" placeholder="email@example.com">
+
+<br><br>
+
+<button id="paypalTest">Open PayPal</button>
+
+<br><br>
+
+<label>
+  <input type="checkbox" id="paypalConfirm">
+  I confirm this is my PayPal account
+</label>
+
+<br><br>
+
+<button id="paypalSave" disabled>Save</button>
+<p id="paypalStatus"></p>
+
+<hr>
+
+<!-- ================= CASH ================= -->
+<h2>Cash</h2>
+
+<label>
+  <input type="checkbox" id="cashToggle">
+  I accept cash payments
+</label>
+
+<!-- ================= SCRIPT ================= -->
+<script>
+  /* ========= VENMO ========= */
+
+  const venmoInput = document.getElementById("venmoUsername");
+  const venmoPreview = document.getElementById("venmoPreview");
+  const venmoConfirm = document.getElementById("venmoConfirm");
+  const venmoSave = document.getElementById("venmoSave");
+  const venmoStatus = document.getElementById("venmoStatus");
+
+  // Live preview
+  venmoInput.addEventListener("input", function () {
+    let username = this.value.trim().replace("@", "");
+    venmoPreview.innerText = username ? "Profile: @" + username : "";
+  });
+
+  // Enable save when confirmed
+  venmoConfirm.addEventListener("change", function () {
+    venmoSave.disabled = !this.checked;
+  });
+
+  // Test in Venmo
+  document.getElementById("venmoTest").onclick = function () {
+    let username = venmoInput.value.trim().replace("@", "").toLowerCase();
+
+    if (!username) {
+      alert("Enter a username");
+      return;
+    }
+
+    const appLink = `venmo://users/${username}`;
+    const webLink = `https://venmo.com/u/${username}`;
+
+    window.location.href = appLink;
+
+    setTimeout(() => {
+      window.open(webLink, "_blank");
+    }, 1500);
+  };
+
+  // Save Venmo
+  venmoSave.onclick = function () {
+    let username = venmoInput.value.trim().replace("@", "").toLowerCase();
+
+    if (!username) {
+      alert("Enter a username");
+      return;
+    }
+
+    venmoStatus.innerText = "Venmo saved: @" + username;
+  };
+
+
+  /* ========= PAYPAL ========= */
+
+  const paypalInput = document.getElementById("paypalEmail");
+  const paypalConfirm = document.getElementById("paypalConfirm");
+  const paypalSave = document.getElementById("paypalSave");
+  const paypalStatus = document.getElementById("paypalStatus");
+
+  // Enable save when confirmed
+  paypalConfirm.addEventListener("change", function () {
+    paypalSave.disabled = !this.checked;
+  });
+
+  // Open PayPal
+  document.getElementById("paypalTest").onclick = function () {
+    let email = paypalInput.value.trim();
+
+    if (!email) {
+      alert("Enter a PayPal email");
+      return;
+    }
+
+    window.open("https://www.paypal.com/signin", "_blank");
+  };
+
+  // Save PayPal
+  paypalSave.onclick = function () {
+    let email = paypalInput.value.trim();
+
+    if (!email) {
+      alert("Enter a PayPal email");
+      return;
+    }
+
+    paypalStatus.innerText = "PayPal saved: " + email;
+  };
+</script>
