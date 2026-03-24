@@ -20,6 +20,7 @@ CREATE TABLE "Rides"(
     "id" SERIAL NOT NULL,
     "date" DATE NOT NULL,
     "driverid" BIGINT NOT NULL,
+    "orgin" VARCHAR(255) NOT NULL,
     "address" VARCHAR(255) NOT NULL,
     "cost" FLOAT(53) NOT NULL,
     "isactive" BOOLEAN NOT NULL,

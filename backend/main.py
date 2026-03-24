@@ -3,10 +3,10 @@ from pydantic import BaseModel, ConfigDict
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
-from . import models
-from .models import engine
+from backend import models
+from backend.models import engine
 from sqlalchemy.orm import sessionmaker, Session
+from .models import User, Rides, PaymentMethods, Base, engine
 import datetime
 import json
 import os
@@ -73,15 +73,24 @@ async def prepare_saml_request(request: Request):
 class RideRequest(BaseModel):
     driverid: int
     address: str
+    orgin: str
     cost: float
     description: str | None = None
+    date: datetime.datetime
 
-# returns json with ride info
+class putUser(BaseModel):
+    username: str
+    email: str
+    rcsid: str
+    isdriver: bool
+    password: str
+
 class RideResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     driverid: int
     address: str
+    orgin: str
     cost: float
     isactive: bool
     description: str | None = None
@@ -257,20 +266,25 @@ def read_user(user_id: str, db: Session = Depends(get_db)):
 @app.post("/request_ride")
 def request_ride(ride: RideRequest, db: Session = Depends(get_db)):
     # get lat and lon from address using Google Geocoding API
+    print(f"Requesting ride with address {ride.address} and origin {ride.orgin}")
+    print(f"Requesting ride with date {ride.date}")
+    print(f"Requesting ride with driver id {ride.driverid}")
     geo = requests.get(
         "https://maps.googleapis.com/maps/api/geocode/json",
         params={"address": ride.address, "key": GOOGLE_API_KEY}
     ).json()
+    print(f"Geocoding status: {geo.get('status')}, error: {geo.get('error_message')}, results count: {len(geo.get('results', []))}")
     if not geo["results"]:
         raise HTTPException(status_code=400, detail="Address not found")
     location = geo["results"][0]["geometry"]["location"]
     lat, lon = location["lat"], location["lng"]
     new_ride = models.Rides(
         driverid=ride.driverid,
+        orgin =ride.orgin,
         address=ride.address,
         cost=ride.cost,
         description=ride.description,
-        date=datetime.datetime.now(datetime.timezone.utc),
+        date=ride.date,
         lat=lat,
         lon=lon,
     )
@@ -281,6 +295,7 @@ def request_ride(ride: RideRequest, db: Session = Depends(get_db)):
         return RideResponse.model_validate(new_ride)
     except Exception as e:
         db.rollback()
+        print(f"DB error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/add_user")
@@ -299,7 +314,13 @@ def add_user(user: UserInput, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
 
-
+@app.get("/userid/{rcsid}")
+def get_userid(rcsid: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter_by(rcsid=rcsid).first()
+    if user:
+        return {"id": user.id}
+    else:
+        raise HTTPException(status_code=404, detail="User not found")
 # Serve frontend static assets and additional pages (post.html, ride.html, etc.)
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 
@@ -362,3 +383,41 @@ def cancel_ride(ride_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
+
+
+
+
+# Pydantic model for request body
+class PaymentRequest(BaseModel):
+    user_id: int
+    venmo_username: str = None
+    paypal_email: str = None
+    accepts_cash: bool = None
+
+@app.post("/payment")
+def update_payment(payment_req: PaymentRequest):
+    session = SessionLo()
+    try:
+        payment = session.query(PaymentMethods).filter_by(user_id=payment_req.user_id).first()
+        if not payment:
+            payment = PaymentMethods(user_id=payment_req.user_id)
+            session.add(payment)
+
+        if payment_req.venmo_username is not None:
+            payment.venmo_username = payment_req.venmo_username
+        if payment_req.paypal_email is not None:
+            payment.paypal_email = payment_req.paypal_email
+        if payment_req.accepts_cash is not None:
+            payment.accepts_cash = payment_req.accepts_cash
+
+        session.commit()
+        return {"payment": {
+            "venmo": payment.venmo_username,
+            "paypal": payment.paypal_email,
+            "accepts_cash": payment.accepts_cash
+        }}
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        session.close()
