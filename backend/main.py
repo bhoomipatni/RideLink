@@ -121,6 +121,31 @@ class RideWithETA(BaseModel):
 class RideListResponse(BaseModel):
     rides: list[RideResponse]
 
+# backend calculator
+class estimateRequest(BaseModel):
+    origin: str
+    destination: str
+
+class estimateResponse(BaseModel):
+    origin: str
+    destination: str
+    distance: float
+    time: float
+    cost: float
+    breakdown: dict # if we want to show how the cost is calculated
+
+def geocode_address(address: str) -> tuple[float, float]: # take in address and return lat and long
+    geo = requests.get("https://maps.googleapis.com/maps/api/geocode/json", params={"address": address, "key": GOOGLE_API_KEY}).json()
+    if geo.get("status") != "OK" or not geo.get("results"): 
+        raise HTTPException(status_code=400, detail=f"Could not find the address: {address}")
+    result = geo.get("results", [{}])
+    location = result.get("geometry", {}).get("location", {})
+    lat = location.get("lat")
+    lng = location.get("lng")
+    if lat is None or lng is None:
+        raise HTTPException(status_code=400, detail=f"Could not find the address: {address}")
+    return lat, lng
+
 @app.get("/")
 async def read_root():
     index_path = os.path.join(FRONTEND_DIR, "index.html")
