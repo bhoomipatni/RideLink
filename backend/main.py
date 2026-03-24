@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI, HTTPException, Depends, Request
 from pydantic import BaseModel, ConfigDict
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
@@ -15,6 +14,8 @@ import requests
 from dotenv import load_dotenv
 from onelogin.saml2.auth import OneLogin_Saml2_Auth
 from onelogin.saml2.metadata import OneLogin_Saml2_Metadata
+import jwt
+
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
@@ -66,28 +67,9 @@ async def prepare_saml_request(request: Request):
         "https": "on" if request.url.scheme == "https" else "off",
     }
 
-# Example database query to ensure models are loaded
-# users = session.query(models.User).all()
-
-# insert a user to the table during the session
-# ALWAYS COMMIT WHEN YOU ARE ADDING OR EDITING DATA IN THE DATABASE OR CHANGES WILL NOT BE SAVED
-# new_user = models.User(username='Sandy', email='sandy@gmail.com', password='cool-password')
-# models.session.add(new_user)
-# models.session.commit()
-
-# THESE ARE PURELY EXAMPLES OF HOW TO QUERY THE DATABASE WE WILL PROBABLY BE DOING QUERIES IN main.py OR ANOTHER FILE
-# AND LEAVE THIS FILE PURELY FOR THE MODELS AND DATABASE CONNECTION
-# Example: query some data from the database and print
-# all_users = session.query(User).all()
-# for user in all_users:
-#     print(user.username, user.email)
-
-# Example: Querying a specific user by their username
-# user = session.query(User).filter_by(username='Sandy').first()
-# print(user.username)
-
 
 # Pydantic models
+# driver posts a ride with address, cost, description
 class RideRequest(BaseModel):
     driverid: int
     address: str
@@ -116,18 +98,28 @@ class RideResponse(BaseModel):
     lat: float
     lon: float
 
-class UserResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: int
+# adds a user to the database with username, rcsid, and isdriver boolean
+class UserInput(BaseModel):
     username: str
-    email: str
     rcsid: str
     isdriver: bool
-    password: str
 
+# returns json with user info
+class UserOutput(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    username: str
+    rcsid: str
+    isdriver: bool
+
+# this is response model for search function that returns a dict with ride info and eta in seconds to the ride
+# maybe put config in here
 class RideWithETA(BaseModel):
     ride: RideResponse
     eta_seconds: int | None = None
+
+# this is the response model for upcoming/previous rides
+class RideListResponse(BaseModel):
+    rides: list[RideResponse]
 
 @app.get("/")
 async def read_root():
@@ -147,14 +139,35 @@ async def callback(request: Request):
     req = await prepare_saml_request(request)
     auth = init_saml_auth(req)
     auth.process_response()
-    errors = auth.get_errors()
-    if errors:
-        return {"errors": errors}
-    return {
-        "name_id": auth.get_nameid(),
-        "attributes": auth.get_attributes(),
-    }
+    # errors = auth.get_errors()
 
+    rcsid = auth.get_nameid()
+    token = jwt.encode({"rcsid": rcsid}, os.getenv("SESSION_SECRET"), algorithm="HS256")
+    response = RedirectResponse(url="/", status_code=302)
+    response.set_cookie("session", token)
+    return response
+    # if errors:
+    #     return {"errors": errors}
+    # return {
+    #     "name_id": auth.get_nameid(),
+    #     "attributes": auth.get_attributes(),
+    # }
+
+def get_current_user(request: Request, db: Session = Depends(get_db)):
+    token = request.cookies.get("token")
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    try:
+        payload = jwt.decode(token, os.getenv("SESSION_SECRET"), algorithms=["HS256"])
+        rcsid = str(payload["rcsid"])
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    if not rcsid:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    user = db.query(models.User).filter_by(rcsid=rcsid).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
 
 @app.get("/metadata", response_class=HTMLResponse)
 def metadata():
@@ -240,11 +253,13 @@ def search_rides(address: str, date: str, db: Session = Depends(get_db)):
     #convert rides to response model Ride with ETA
     rides_with_eta = [RideWithETA(ride=RideResponse.model_validate(r), eta_seconds=eta_map.get(i)) for i, r in enumerate(rides)]
     return rides_with_eta
+
+
 @app.get("/users/{user_id}")
-def read_user(user_id: int, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter_by(id=user_id).first()
+def read_user(user_id: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter_by(rcsid=user_id).first()
     if user:
-        return UserResponse.model_validate(user)
+        return UserOutput.model_validate(user)
     else:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -284,19 +299,17 @@ def request_ride(ride: RideRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/add_user")
-def add_user(user: putUser, db: Session = Depends(get_db)):
+def add_user(user: UserInput, db: Session = Depends(get_db)):
     new_user = models.User(
         username=user.username,
-        email=user.email,
         rcsid=user.rcsid,
-        password=user.password,
         isdriver=user.isdriver
     )
     try:
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
-        return UserResponse.model_validate(new_user)
+        return UserOutput.model_validate(new_user)
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
@@ -311,6 +324,65 @@ def get_userid(rcsid: str, db: Session = Depends(get_db)):
 # Serve frontend static assets and additional pages (post.html, ride.html, etc.)
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 
+# returns current and any upcoming rides
+@app.get("/upcoming_rides", response_model=RideListResponse)
+def get_upcoming_rides(db: Session = Depends(get_db)):
+    user_id = get_current_user(Request, db).rcsid
+    user = db.query(models.User).filter_by(rcsid=user_id).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    rides = db.query(user.rides).filter(
+        models.Rides.date > datetime.datetime.now(datetime.timezone.utc),
+        models.Rides.isactive == True).all()
+    
+    if not rides:
+        raise HTTPException(status_code=404, detail="No upcoming rides found")
+    return RideListResponse(rides=rides)
+
+# returns past rides that are no longer active
+@app.get("/previous_rides", response_model=RideListResponse)
+def get_previous_rides(db: Session = Depends(get_db)):
+    user_id = get_current_user(Request, db).rcsid
+    user = db.query(models.User).filter_by(rcsid=user_id).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    rides = db.query(user.rides).filter(
+        models.Rides.date < datetime.datetime.now(datetime.timezone.utc), 
+        models.Rides.isactive == False).all()
+    
+    if not rides:
+        raise HTTPException(status_code=404, detail="No previous rides found")
+    return RideListResponse(rides=rides)
+
+
+@app.post("/complete_ride/{ride_id}")
+def complete_ride(ride_id: int, db: Session = Depends(get_db)):
+    ride = db.query(models.Rides).filter_by(id=ride_id).first()
+    if not ride:
+        raise HTTPException(status_code=404, detail="Ride not found")
+    ride.isactive = False
+    try:
+        db.commit()
+        db.refresh(ride)
+        return RideResponse.model_validate(ride)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/cancel_ride/{ride_id}")
+def cancel_ride(ride_id: int, db: Session = Depends(get_db)):
+    ride = db.query(models.Rides).filter_by(id=ride_id).first()
+    if not ride:
+        raise HTTPException(status_code=404, detail="Ride not found")
+    db.delete(ride)
+    try:
+        db.commit()
+        return {"detail": "Ride cancelled successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 
