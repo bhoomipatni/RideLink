@@ -396,7 +396,7 @@ class PaymentRequest(BaseModel):
 
 @app.post("/payment")
 def update_payment(payment_req: PaymentRequest):
-    session = SessionLo()
+    session = SessionLocal()
     try:
         payment = session.query(PaymentMethods).filter_by(user_id=payment_req.user_id).first()
         if not payment:
