@@ -1,5 +1,5 @@
 from sqlalchemy.dialects.postgresql import ARRAY
-
+from sqlalchemy.ext.mutable import MutableList
 from sqlalchemy import Boolean, Float, create_engine, Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -25,9 +25,7 @@ class User(Base):
     __tablename__ = 'Users'
     isdriver = Column(Boolean, nullable=False, default=False)
     rcsid = Column(String(50), primary_key=True, unique=True, nullable=False)
-    rides = Column(ARRAY(Integer), nullable=True) # this is just a list of ride ids, can be null if no rides
-
-    password = Column(String(100), nullable=False)
+    rides = Column(MutableList.as_mutable(ARRAY(Integer)), nullable=True) # this is just a list of ride ids, can be null if no rides
     payment_methods = relationship("PaymentMethods", backref="user", uselist=False)
     
 class Rides(Base):
@@ -55,7 +53,7 @@ class PaymentMethods(Base):
 
     # Optional: track when it was last updated
     updated_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=datetime.datetime.now)
-    riders = Column(ARRAY(User), nullable=True) # this is just a list of rider userids, can be null if no riders
+    riders = Column(ARRAY(String(50)), nullable=True) # this is just a list of rider userids, can be null if no riders
 
     
 
