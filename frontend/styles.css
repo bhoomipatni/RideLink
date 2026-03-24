@@ -1,3 +1,4 @@
+
 :root {
   --primary: rgb(203, 21, 21);
   --secondary: #0f172a;
@@ -63,41 +64,41 @@ nav {
 }
 
 .dropdown {
-  position: relative;
-  display: inline-block;
-}
+      position: relative;
+      display: inline-block;
+    }
 
-.dropdown-toggle {
-  cursor: pointer;
-}
+    .dropdown-toggle {
+      cursor: pointer;
+    }
 
-.dropdown-menu {
-  display: none;
-  position: absolute;
-  right: 0;
-  background-color: white;
-  min-width: 160px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  overflow: hidden;
-  z-index: 100;
-}
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      right: 0;
+      background-color: white;
+      min-width: 160px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      overflow: hidden;
+      z-index: 100;
+    }
 
-.dropdown-menu a {
-  display: block;
-  padding: 10px 14px;
-  text-decoration: none;
-  color: #1e293b;
-  font-size: 14px;
-}
+    .dropdown-menu a {
+      display: block;
+      padding: 10px 14px;
+      text-decoration: none;
+      color: #1e293b;
+      font-size: 14px;
+    }
 
-.dropdown-menu a:hover {
-  background-color: #f1f5f9;
-}
+    .dropdown-menu a:hover {
+      background-color: #f1f5f9;
+    }
 
-.dropdown:hover .dropdown-menu {
-  display: block;
-}
+    .dropdown:hover .dropdown-menu {
+      display: block;
+    }
 
 /* Hero */
 .hero {
@@ -152,7 +153,7 @@ nav {
   color: var(--text);
   padding: 2rem;
   border-radius: 1rem;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
 }
 
 .hero-card ul {
@@ -243,110 +244,5 @@ footer p {
   .cta-buttons a {
     display: block;
     margin: 0.5rem auto;
-  }
-}
-
-/* Settings Page */
-.settings-wrap {
-  max-width: 900px;
-  margin: 2rem auto;
-  padding: 0 1.25rem;
-}
-
-.settings-topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.home-link {
-  text-decoration: none;
-  color: #ffffff;
-  background: var(--secondary);
-  padding: 0.5rem 0.85rem;
-  border-radius: 0.45rem;
-  font-weight: 600;
-}
-
-.home-link:hover {
-  background: #1e293b;
-}
-
-.tabs {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-}
-
-.tab-btn {
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #1e293b;
-  padding: 0.6rem 1rem;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.tab-btn.active {
-  background: rgb(203, 21, 21);
-  border-color: rgb(203, 21, 21);
-  color: #ffffff;
-}
-
-.tab-panel {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.75rem;
-  padding: 1.25rem;
-}
-
-.tab-panel h2 {
-  margin-bottom: 0.75rem;
-}
-
-.tab-panel p,
-.tab-panel label,
-.tab-panel input,
-.tab-panel button {
-  margin-bottom: 0.75rem;
-}
-
-.tab-panel input[type="text"],
-.tab-panel input[type="email"] {
-  width: 100%;
-  max-width: 420px;
-  padding: 0.55rem 0.7rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.45rem;
-}
-
-.tab-panel button {
-  border: 0;
-  background: rgb(203, 21, 21);
-  color: #ffffff;
-  padding: 0.55rem 0.9rem;
-  border-radius: 0.45rem;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.tab-panel button:disabled {
-  background: #94a3b8;
-  cursor: not-allowed;
-}
-
-.muted {
-  color: #64748b;
-  font-size: 0.95rem;
-}
-
-@media (max-width: 640px) {
-  .settings-topbar {
-    flex-direction: column;
-    align-items: flex-start;
   }
 }
