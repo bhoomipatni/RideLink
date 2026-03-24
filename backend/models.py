@@ -47,7 +47,7 @@ class PaymentMethods(Base):
     __tablename__ = "PaymentMethods"
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, nullable=False)  # FK can be added if needed: ForeignKey('Users.id')
+    user_id = Column(String(50), nullable=False)  # FK can be added if needed: ForeignKey('Users.id')
     
     venmo_username = Column(String(50), nullable=True)
     paypal_email = Column(String(100), nullable=True)
@@ -55,7 +55,7 @@ class PaymentMethods(Base):
 
     # Optional: track when it was last updated
     updated_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=datetime.datetime.now)
-    riders = Column(ARRAY(User), nullable=True) # this is just a list of rider userids, can be null if no riders
+    riders = Column(ARRAY(String(50)), nullable=True) # this is just a list of rider userids, can be null if no riders
 
     
 
