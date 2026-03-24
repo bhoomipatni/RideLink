@@ -409,7 +409,28 @@ def cancel_ride(ride_id: int, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
 
-
+@app.get("/estimate", response_model=estimateResponse)
+def estimate(origin: str, destination: str):
+    o_lat, o_lng = geocode_address(origin)
+    d_lat, d_lng = geocode_address(destination)
+    route = requests.post("https://routes.googleapis.com/directions/v2:computeRoutes",
+        headers={
+            "X-Goog-Api-Key": GOOGLE_API_KEY,
+            "X-Goog-FieldMask": "routes.distanceMeters,routes.duration"
+        },
+        json={
+            "origin": {"location": {"latLng": {"latitude": o_lat, "longitude": o_lng}}},
+            "destination": {"location": {"latLng": {"latitude": d_lat, "longitude": d_lng}}},
+            "travelMode": "DRIVE",
+            "routingPreference": "TRAFFIC_AWARE"
+        }
+    ).json()
+    routes = route.get("routes")
+    if not routes:
+        raise HTTPException(status_code=400, detail="Could not compute route between addresses")
+    route = routes[0]
+    miles = route.get("distanceMeters", 0) / 1609.34
+    minutes = int(float(route.get("duration", "0s").rstrip("s"))) / 60
 
 
 # Pydantic model for request body
