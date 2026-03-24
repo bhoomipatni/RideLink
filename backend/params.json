@@ -1,5 +1,8 @@
 {
     "README": "Ts contains params used in main.py",
     "DISTANCE_LIMIT": 0.1,
-    "GET_ETA_COUNT" : 10
+    "GET_ETA_COUNT" : 10,
+    "BASE_FARE": 2.50,
+    "COST_PER_MILE": 1.25,
+    "COST_PER_MINUTE": 0.30
 }

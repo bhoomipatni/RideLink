@@ -3,10 +3,10 @@ from pydantic import BaseModel, ConfigDict
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from backend import models
-from backend.models import engine
+import models
+from models import engine
 from sqlalchemy.orm import sessionmaker, Session
-from .models import User, Rides, PaymentMethods, Base, engine
+from models import User, Rides, PaymentMethods, Base, engine
 import datetime
 import json
 import os
@@ -409,6 +409,10 @@ def cancel_ride(ride_id: int, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
 
+BASE_FARE = _params["BASE_FARE"]
+COST_PER_MILE = _params["COST_PER_MILE"]
+COST_PER_MINUTE = _params["COST_PER_MINUTE"]
+
 @app.get("/estimate", response_model=estimateResponse)
 def estimate(origin: str, destination: str):
     o_lat, o_lng = geocode_address(origin)
@@ -431,7 +435,22 @@ def estimate(origin: str, destination: str):
     route = routes[0]
     miles = route.get("distanceMeters", 0) / 1609.34
     minutes = int(float(route.get("duration", "0s").rstrip("s"))) / 60
-
+    time_cost = minutes * COST_PER_MINUTE
+    distance_cost = miles * COST_PER_MILE
+    total = round(max(BASE_FARE + time_cost + distance_cost), 2)
+    return estimateResponse(
+        origin = origin,
+        destination = destination,
+        distance = round(miles, 2),
+        time = round(minutes, 2),
+        cost = total,
+        breakdown={
+            "base_fare": BASE_FARE,
+            "distance_cost": round(distance_cost, 2),
+            "time_cost": round(time_cost, 2),
+            "total": total
+        }
+    )
 
 # Pydantic model for request body
 class PaymentRequest(BaseModel):
@@ -442,7 +461,7 @@ class PaymentRequest(BaseModel):
 
 @app.post("/payment")
 def update_payment(payment_req: PaymentRequest):
-    session = SessionLo()
+    session = SessionLocal()
     try:
         payment = session.query(PaymentMethods).filter_by(user_id=payment_req.user_id).first()
         if not payment:
