@@ -28,7 +28,10 @@ class User(Base):
     rides = Column(ARRAY(Integer), nullable=True) # this is just a list of ride ids, can be null if no rides
 
     password = Column(String(100), nullable=False)
-    payment_methods = relationship("PaymentMethods", backref="user", uselist=False)
+    # Payment info directly in User
+    venmo_username = Column(String(50), nullable=True)
+    paypal_email = Column(String(100), nullable=True)
+    accepts_cash = Column(Boolean, default=False)
     
 class Rides(Base):
     __tablename__ = 'Rides'
@@ -42,23 +45,7 @@ class Rides(Base):
     date = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), nullable=False)
     lat = Column(Float, nullable=False)
     lon = Column("long", Float, nullable=False)
-
-class PaymentMethods(Base):
-    __tablename__ = "PaymentMethods"
-
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, nullable=False)  # FK can be added if needed: ForeignKey('Users.id')
     
-    venmo_username = Column(String(50), nullable=True)
-    paypal_email = Column(String(100), nullable=True)
-    accepts_cash = Column(Boolean, default=False)
-
-    # Optional: track when it was last updated
-    updated_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), onupdate=datetime.datetime.now)
-    riders = Column(ARRAY(User), nullable=True) # this is just a list of rider userids, can be null if no riders
-
-    
-
 # create all tables
 Base.metadata.create_all(engine)
 
