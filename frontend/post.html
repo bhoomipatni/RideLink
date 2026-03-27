@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,6 +8,7 @@
   <link rel="stylesheet" href="styles.css" />
   <script src="./post.js" defer></script>
 </head>
+
 <body>
   <header>
     <div class="container">
@@ -21,40 +23,65 @@
           <a href="ride.html">Find a Ride</a>
           <a href="#My Trips">My Trips</a>
           <a href="info.html">How It Works</a>
-          <a href="#contact">Contact Us</a>
-          <a href="#account">My Account</a>
+          <a href="contactUs.html">Contact Us</a>
+
           <div class="dropdown">
             <a class="dropdown-toggle">My Account ▾</a>
             <div class="dropdown-menu">
               <a href="/login">Log In</a>
               <a href="#signup">Sign Up</a>
-              <a href="#settings">Settings</a>
+              <a href="settings.html">Settings</a>
             </div>
           </div>
         </div>
       </nav>
     </div>
   </header>
-  <h1>Post a Trip</h1>
-  <h2>Trip Details</h2>
-    <label for="startInput">Start Location:</label>
-    <input type="text" id="startInput" name="start"> <br>
+  <section class="form-section">
+    <div class="form-container">
+      <div class="form-card">
+        <h1>Post a Trip</h1>
+        <h2>Trip Details</h2>
+        <form>
+          <div class="field">
+            <input id="start" name="start" type="text" placeholder=" " required />
+            <label for="start">Start Location</label>
+          </div>
+          <div class="field">
+            <input id="end" name="end" type="text" placeholder=" " required />
+            <label for="end">Destination</label>
+          </div>
+          <div class="field">
+            <input id="date" name="date" type="date" placeholder=" " required />
+            <label for="date">Leave Date</label>
+          </div>
+          <div class="field">
+            <input id="time" name="time" type="time" placeholder=" " required />
+            <label for="time">Choose a Time</label>
+          </div>
+          <div class="field">
+            <input id="seats" name="seats" type="number" placeholder=" " required />
+            <label for="seats">Number of Seats</label>
+          </div>
+          <button id="postButton" type="button">Post Trip</button>
+        </form>
+      </div>
+      <div class="form-image-stack">
+        <div class="form-image">
+          <img src="postAtripImage.webp" alt="image">
+        </div>
+        <div class="form-image">
+          <img src="RideLink.png" alt="image">
+        </div>
+      </div>
+    </div>
+  </section>
 
-    <label for="endInput">Destination:</label>
-    <input type="text" id="endInput" name="end"><br>
 
-    <label for="leave-date">Leave Date:</label>
-    <input type="date" id="leave-date" name="leave-date"><br>
-
-    <label for="leave-time">Choose a time:</label>
-    <input type="time" id="leave-time" name="leave-time"><br>
-
-    <label for="seats">Number of Seats:</label>
-    <input type="number" id="seats" name="seats" step="1" min="1"><br>
-    <button id="postButton">Post Trip</button>
   <footer id="contact">
     <p>© 2026 RideLink. Built for students.</p>
   </footer>
 
 </body>
+
 </html>
