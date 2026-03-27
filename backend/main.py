@@ -80,7 +80,6 @@ class RideRequest(BaseModel):
 
 class putUser(BaseModel):
     username: str
-    email: str
     rcsid: str
     isdriver: bool
     password: str
@@ -103,6 +102,8 @@ class UserInput(BaseModel):
     username: str
     rcsid: str
     isdriver: bool
+    email: str
+    rides: list[int] | None = None 
 
 # returns json with user info
 class UserOutput(BaseModel):
@@ -323,7 +324,8 @@ def add_user(user: UserInput, db: Session = Depends(get_db)):
     new_user = models.User(
         username=user.username,
         rcsid=user.rcsid,
-        isdriver=user.isdriver
+        isdriver=user.isdriver,
+        rides = []
     )
     try:
         db.add(new_user)
@@ -403,9 +405,6 @@ def cancel_ride(ride_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
-
-
-
 
 # Pydantic model for request body
 class PaymentRequest(BaseModel):

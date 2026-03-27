@@ -1,9 +1,7 @@
 CREATE TABLE "Users"(
     "username" VARCHAR(255) NOT NULL,
-    "email" VARCHAR(255) NOT NULL,
-    "rcsid" VARCHAR(255) NOT NULL,
+    "rcsid" VARCHAR(50) NOT NULL,
     "isdriver" BOOLEAN NOT NULL,
-    "password" VARCHAR(255) NOT NULL
     "rides" INT[] NOT NULL
 );
 CREATE INDEX "users_id_username_rcsid_index" ON

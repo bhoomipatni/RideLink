@@ -23,11 +23,10 @@ engine = create_engine(database_url, pool_pre_ping=True, pool_recycle=300)
 # example model
 class User(Base):
     __tablename__ = 'Users'
+    username = Column(String(50), nullable=False)
     isdriver = Column(Boolean, nullable=False, default=False)
     rcsid = Column(String(50), primary_key=True, unique=True, nullable=False)
     rides = Column(ARRAY(Integer), nullable=True) # this is just a list of ride ids, can be null if no rides
-
-    password = Column(String(100), nullable=False)
     # Payment info directly in User
     venmo_username = Column(String(50), nullable=True)
     paypal_email = Column(String(100), nullable=True)
