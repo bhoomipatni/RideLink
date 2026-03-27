@@ -280,8 +280,9 @@ h2 {
 }
 
 .form-card,
-.form-image {
+.form-image-stack {
   flex: 1;
+  min-width: 0;
 }
 
 /* Form card (reuse your design language) */
@@ -305,13 +306,10 @@ h2 {
 
 /* Image styling */
 .form-image img {
-  width: auto;         /* keep original width */
+  width: 100%;         /* keep original width */
   height: auto;        /* keep original height */
-  max-width: 100%;     /* scale down if too big for container */
-  max-height: 100%;    /* scale down if too tall for container */
   border-radius: 1rem;
   display: block;
-
 }
 
 /* Floating field styles (from before) */
