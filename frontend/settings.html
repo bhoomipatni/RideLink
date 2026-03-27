@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings | RideLink</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <main class="settings-wrap">
+    <div class="settings-topbar">
+      <h1>Settings</h1>
+      <a class="home-link" href="index.html">Back to Home</a>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="Settings Tabs">
+      <button class="tab-btn" id="accountTabBtn" data-tab="accountTab" role="tab" aria-selected="false" type="button">
+        Account
+      </button>
+      <button class="tab-btn active" id="paymentTabBtn" data-tab="paymentTab" role="tab" aria-selected="true"
+        type="button">
+        Payment Methods
+      </button>
+    </div>
+
+    <section class="tab-panel" id="accountTab" role="tabpanel" hidden>
+      <h2>Account</h2>
+      <p class="muted">Manage profile and account preferences from this tab.</p>
+    </section>
+
+    <section class="tab-panel" id="paymentTab" role="tabpanel">
+      <h2>Payment Methods</h2>
+      <p class="muted">
+        RideLink does not process payments. Payments are completed directly in Venmo or PayPal.
+      </p>
+
+      <hr />
+
+      <h3>Venmo</h3>
+      <label for="venmoUsername">Enter Venmo Username:</label>
+      <input type="text" id="venmoUsername" placeholder="@username" />
+      <p id="venmoPreview" class="muted"></p>
+      <button id="venmoTest" type="button">Test in Venmo</button>
+      <label>
+        <br>
+        <input type="checkbox" id="venmoConfirm" />
+        I confirm this is my Venmo account
+      </label>
+      <br />
+      <button id="venmoSave" type="button" disabled>Save</button>
+      <p id="venmoStatus"></p>
+
+      <hr />
+
+      <h3>PayPal</h3>
+      <label for="paypalEmail">Enter PayPal Email:</label>
+      <input type="email" id="paypalEmail" placeholder="email@example.com" />
+      <button id="paypalTest" type="button">Open PayPal</button>
+      <label>
+        <br>
+        <input type="checkbox" id="paypalConfirm" />
+        I confirm this is my PayPal account
+      </label>
+      <br />
+      <button id="paypalSave" type="button" disabled>Save</button>
+      <p id="paypalStatus"></p>
+
+      <hr />
+
+      <h3>Cash</h3>
+      <label>
+        <input type="checkbox" id="cashToggle" />
+        I accept cash payments
+      </label>
+    </section>
+  </main>
+
+  <script>
+    const tabButtons = document.querySelectorAll(".tab-btn");
+    const tabPanels = document.querySelectorAll(".tab-panel");
+
+    function showTab(panelId) {
+      tabPanels.forEach((panel) => {
+        panel.hidden = panel.id !== panelId;
+      });
+
+      tabButtons.forEach((button) => {
+        const isActive = button.dataset.tab === panelId;
+        button.classList.toggle("active", isActive);
+        button.setAttribute("aria-selected", String(isActive));
+      });
+    }
+
+    tabButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        showTab(button.dataset.tab);
+      });
+    });
+  </script>
+  <script src="payment.js"></script>
+</body>
+
+</html>
