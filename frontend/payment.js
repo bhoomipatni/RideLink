@@ -1,5 +1,4 @@
 // ========== VARIABLES ==========
-const user_id = 1; // TODO: replace with actual logged-in user ID
 
 // --- VENMO ---
 const venmoInput = document.getElementById("venmoUsername");
@@ -48,7 +47,8 @@ venmoSave.addEventListener("click", async function () {
     const res = await fetch("http://127.0.0.1:8000/payment", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id, venmo_username: username })
+      credentials: "include",
+      body: JSON.stringify({ venmo_username: username })
     });
     const data = await res.json();
     venmoStatus.innerText = "Saved: @" + data.payment.venmo;
@@ -77,7 +77,8 @@ paypalSave.addEventListener("click", async function () {
     const res = await fetch("http://127.0.0.1:8000/payment", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id, paypal_email: email })
+      credentials: "include",
+      body: JSON.stringify({ paypal_email: email })
     });
     const data = await res.json();
     paypalStatus.innerText = "Saved: " + data.payment.paypal;
@@ -93,7 +94,8 @@ cashToggle.addEventListener("change", async function () {
     const res = await fetch("http://127.0.0.1:8000/payment", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id, accepts_cash: this.checked })
+      credentials: "include",
+      body: JSON.stringify({ accepts_cash: this.checked })
     });
     const data = await res.json();
     console.log("Cash updated:", data.payment.accepts_cash);

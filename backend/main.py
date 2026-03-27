@@ -6,7 +6,7 @@ from fastapi.templating import Jinja2Templates
 import models
 from models import engine
 from sqlalchemy.orm import sessionmaker, Session
-from models import User, Rides, PaymentMethods, Base, engine
+from .models import User, Rides, Base, engine
 import datetime
 import json
 import os
@@ -167,7 +167,7 @@ async def callback(request: Request):
     # errors = auth.get_errors()
 
     rcsid = auth.get_nameid()
-    token = jwt.encode({"rcsid": rcsid}, os.getenv("SESSION_SECRET"), algorithm="HS256")
+    token = jwt.encode({"rcsid": rcsid}, os.getenv("SAML_PRIVATE_KEY"), algorithm="HS256")
     response = RedirectResponse(url="/", status_code=302)
     response.set_cookie("session", token)
     return response
@@ -179,11 +179,11 @@ async def callback(request: Request):
     # }
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
-    token = request.cookies.get("token")
+    token = request.cookies.get("session")
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     try:
-        payload = jwt.decode(token, os.getenv("SESSION_SECRET"), algorithms=["HS256"])
+        payload = jwt.decode(token, os.getenv("SAML_PRIVATE_KEY"), algorithms=["HS256"])
         rcsid = str(payload["rcsid"])
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
@@ -454,33 +454,36 @@ def estimate(origin: str, destination: str):
 
 # Pydantic model for request body
 class PaymentRequest(BaseModel):
-    user_id: int
     venmo_username: str = None
     paypal_email: str = None
     accepts_cash: bool = None
 
 @app.post("/payment")
-def update_payment(payment_req: PaymentRequest):
+def update_payment(payment_req: PaymentRequest, current_user: User = Depends(get_current_user)):
     session = SessionLocal()
     try:
-        payment = session.query(PaymentMethods).filter_by(user_id=payment_req.user_id).first()
-        if not payment:
-            payment = PaymentMethods(user_id=payment_req.user_id)
-            session.add(payment)
+        user = session.query(User).filter_by(rcsid=current_user.rcsid).first()
+
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
 
         if payment_req.venmo_username is not None:
-            payment.venmo_username = payment_req.venmo_username
+            user.venmo_username = payment_req.venmo_username
         if payment_req.paypal_email is not None:
-            payment.paypal_email = payment_req.paypal_email
+            user.paypal_email = payment_req.paypal_email
         if payment_req.accepts_cash is not None:
-            payment.accepts_cash = payment_req.accepts_cash
+            user.accepts_cash = payment_req.accepts_cash
 
         session.commit()
-        return {"payment": {
-            "venmo": payment.venmo_username,
-            "paypal": payment.paypal_email,
-            "accepts_cash": payment.accepts_cash
-        }}
+
+        return {
+            "payment": {
+                "venmo": user.venmo_username,
+                "paypal": user.paypal_email,
+                "accepts_cash": user.accepts_cash
+            }
+        }
+
     except Exception as e:
         session.rollback()
         raise HTTPException(status_code=500, detail=str(e))
