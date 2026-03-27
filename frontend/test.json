@@ -22,5 +22,29 @@
         "cost": 48.20,
         "payment_method": "PayPal",
         "num_riders": 1
+    },
+    {
+        "id": 3,
+        "destination": "RPI",
+        "day": "Friday",
+        "date": "February 20, 1999",
+        "time": "3:01 AM",
+        "driver": "Puckman",
+        "distance": 100,
+        "cost": 80.324,
+        "payment_method": "Other",
+        "num_riders": 4
+    },
+    {
+        "id": 4,
+        "destination": "Upcoming date example",
+        "day": "Monday",
+        "date": "February 20, 3030",
+        "time": "3:01 AM",
+        "driver": "person4",
+        "distance": 200,
+        "cost": 29.99,
+        "payment_method": "Cash",
+        "num_riders": 3
     }
 ]

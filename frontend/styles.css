@@ -1,3 +1,6 @@
+h1 { /* margin: (top)px (right)px (bottom)px (left)px; or margin: (top/bottom)px (left/right)px*/
+  margin: 10px 100px;
+}
 
 :root {
   --primary: rgb(203, 21, 21);
@@ -218,23 +221,57 @@ section {
   font-size: 0.95rem;
 }
 
-/* Trip stuff */
+/* My Trips page stuff */
 #trip-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  border: 2px solid rgb(170, 0, 0);
+  border-radius: 0 8px 8px 8px;
+  padding: 16px;
+  margin: 0px 100px 24px 100px;
+  background-color: red;
 }
-
 .trip-card {
   display: flex;
   flex-direction: column;
   padding: 16px;
-  border: 1px solid #e0e0e0;
+  border: 2px solid #e0e0e0;
   border-radius: 8px;
   text-decoration: none;
   color: inherit;
+  background-color: white;
+}
+.trip-card:hover {
+  background-color: #f3f1f1;
 }
 
+/* Button/tabs on My Trips page */
+.tab-bar {
+  display: flex;
+  gap: 0;
+  margin-bottom: 0px;
+  margin-left: 100px;
+}
+.tab {
+  padding: 8px 20px;
+  border: 2px solid #e0e0e0;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  background: #f0f0f0;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.tab.active {
+  background: red;
+  color: black;
+  font-weight: bold;
+  border: 2px solid rgb(170, 0, 0);
+  border-bottom: none;
+  margin-bottom: -2px;
+  position: relative;
+  z-index: 1;
+}
 
 /* Footer */
 footer {
