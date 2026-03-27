@@ -343,6 +343,17 @@ def get_userid(rcsid: str, db: Session = Depends(get_db)):
         return {"id": user.id}
     else:
         raise HTTPException(status_code=404, detail="User not found")
+@app.get("/get_map")
+def get_map():
+    resp = requests.get(
+        "https://maps.googleapis.com/maps/api/js",
+        params={"key": GOOGLE_API_KEY, "libraries": "places", "callback": "initMap"}
+    )
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail="Failed to load Maps API")
+    from fastapi.responses import Response
+    return Response(content=resp.text, media_type="application/javascript")
+
 # Serve frontend static assets and additional pages (post.html, ride.html, etc.)
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 

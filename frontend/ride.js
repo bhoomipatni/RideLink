@@ -1,3 +1,45 @@
+let map;
+let autocomplete;
+
+function initMap() {
+    map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: 39.8283, lng: -98.5795 },
+        zoom: 4,
+    });
+
+    let mapSearch = document.createElement("input");
+    mapSearch.type = "text";
+    mapSearch.placeholder = "Search for a location";
+    mapSearch.style.cssText = "margin:10px;padding:8px 12px;width:300px;font-size:14px;border:none;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,0.3);";
+
+    map.controls[google.maps.ControlPosition.TOP_CENTER].push(mapSearch);
+
+    let marker;
+    autocomplete = new google.maps.places.Autocomplete(mapSearch, {
+        fields: ["formatted_address", "geometry"],
+    });
+
+    autocomplete.addListener("place_changed", () => {
+        let place = autocomplete.getPlace();
+        if (place.geometry) {
+            map.setCenter(place.geometry.location);
+            map.setZoom(14);
+            if (marker) marker.setMap(null);
+            marker = new google.maps.Marker({
+                map: map,
+                position: place.geometry.location,
+            });
+            document.getElementById("address").value = place.formatted_address;
+        }
+    });
+}
+
+window.initMap = initMap;
+
+let script = document.createElement("script");
+script.src = "/get_map";
+script.async = true;
+document.head.appendChild(script);
 
 let searchBtn = document.getElementById("searchButton");
 searchBtn.addEventListener("click", async () => {
