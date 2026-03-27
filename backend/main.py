@@ -114,11 +114,15 @@ class RideWithETA(BaseModel):
 class RideListResponse(BaseModel):
     rides: list[RideResponse]
 
-@app.get("/")
-async def read_root():
-    index_path = os.path.join(FRONTEND_DIR, "index.html")
-    return FileResponse(index_path)
+# @app.get("/")
+# async def read_root():
+#     index_path = os.path.join(FRONTEND_DIR, "index.html")
+#     return FileResponse(index_path)
 
+
+@app.get("/")
+async def basic():
+    return {"msg": "Hello World"}
 
 @app.get("/login")
 async def login(request: Request):
