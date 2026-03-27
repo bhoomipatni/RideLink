@@ -14,10 +14,9 @@ async function loadIndTrip() {
     const trip = trips.find(t => t.id === parseInt(id));
 
 
-    //get relevant data
+    //get relevant data - also need to check what kind of data is collected by the backend 
     document.getElementById('destination').textContent = trip.destination;
-    document.getElementById('dateNtime').textContent = `${trip.day} ${trip.date} @ ${trip.time}`;
-    document.getElementById('driver').textContent = `with ${trip.driver}`;
+    document.getElementById('timeNdriver').textContent = `${trip.day} ${trip.date} @ ${trip.time} with ${trip.driver}`;
     document.getElementById('distance').textContent = `${trip.distance} miles`;
     document.getElementById('cost').textContent = `$${trip.cost}`;
     document.getElementById('payment').textContent = trip.payment_method;
@@ -33,9 +32,9 @@ async function loadTrips() {
   trips.forEach(trip => {
     document.getElementById('trip-list').innerHTML += `
       <a href="trips_details.html?id=${trip.id}" class="trip-card">
-        <span>${trip.destination}</span>
-        <span>${trip.date}</span>
-        <span>$${trip.cost}</span>
+        <h3>${trip.destination}</h3>
+        <p>${trip.date}</p>
+        <p>$${trip.cost}</p>
       </a>
     `;
   });
