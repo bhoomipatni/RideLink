@@ -1,5 +1,6 @@
 let map;
 let autocomplete;
+let rideMarkers = [];
 
 function initMap() {
     map = new google.maps.Map(document.getElementById("map"), {
@@ -65,14 +66,33 @@ searchBtn.addEventListener("click", async () => {
             return;
         }
 
-        // render ride cards
+        // clear old ride markers
+        rideMarkers.forEach(m => m.setMap(null));
+        rideMarkers = [];
+
+        // render ride cards and drop map pins
         resultsDiv.innerHTML = "";
+        let bounds = new google.maps.LatLngBounds();
         for (let item of data) {
             let r = item.ride;
             let eta = item.detour_eta != null ? Math.round(item.detour_eta / 60) + " min" : "N/A";
             let fullMins = item.true_eta != null ? Math.round(item.true_eta / 60) : null;
             let trueEta = fullMins != null ? (fullMins >= 60 ? Math.floor(fullMins / 60) + "h " + (fullMins % 60) + "m" : fullMins + " min") : "N/A";
             let dateStr = new Date(r.date).toLocaleString();
+
+            let pos = { lat: r.lat, lng: r.lon };
+            let marker = new google.maps.Marker({
+                map: map,
+                position: pos,
+                title: `${r.orgin} → ${r.address}`,
+            });
+            let infoWindow = new google.maps.InfoWindow({
+                content: `<strong>${r.orgin} → ${r.address}</strong><br>$${r.cost.toFixed(2)} · ${dateStr}`,
+            });
+            marker.addListener("click", () => infoWindow.open(map, marker));
+            rideMarkers.push(marker);
+            bounds.extend(pos);
+
             // AI GEN REPLACE IN PROD ⚠️
             resultsDiv.innerHTML += `
             <div class="ride-card">
@@ -89,6 +109,12 @@ searchBtn.addEventListener("click", async () => {
                     ${r.description ? `<div class="ride-detail"><strong>Info:</strong> ${r.description}</div>` : ""}
                 </div>
             </div>`;
+        }
+        if (rideMarkers.length > 0) {
+            map.fitBounds(bounds);
+            google.maps.event.addListenerOnce(map, "bounds_changed", () => {
+                if (map.getZoom() > 10) map.setZoom(10);
+            });
         }
     } catch (e) {
         console.error("fetch error:", e);
