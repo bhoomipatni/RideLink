@@ -73,7 +73,7 @@ async def prepare_saml_request(request: Request):
 class RideRequest(BaseModel):
     driverid: int
     address: str
-    orgin: str
+    origin: str
     cost: float
     description: str | None = None
     date: datetime.datetime
@@ -83,7 +83,7 @@ class RideResponse(BaseModel):
     id: int
     driverid: int
     address: str
-    orgin: str
+    origin: str
     cost: float
     isactive: bool
     description: str | None = None
@@ -279,7 +279,7 @@ def request_ride(ride: RideRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=403, detail="Register as a driver to post rides")
 
     # get lat and lon from address using Google Geocoding API
-    print(f"Requesting ride with address {ride.address} and origin {ride.orgin}")
+    print(f"Requesting ride with address {ride.address} and origin {ride.origin}")
     print(f"Requesting ride with date {ride.date}")
     print(f"Requesting ride with driver id {ride.driverid}")
     geo = requests.get(
@@ -293,7 +293,7 @@ def request_ride(ride: RideRequest, db: Session = Depends(get_db)):
     lat, lon = location["lat"], location["lng"]
     new_ride = models.Rides(
         driverid=ride.driverid,
-        orgin =ride.orgin,
+        origin =ride.origin,
         address=ride.address,
         cost=ride.cost,
         description=ride.description,
