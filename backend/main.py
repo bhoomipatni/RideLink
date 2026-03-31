@@ -80,7 +80,6 @@ class RideRequest(BaseModel):
 
 class putUser(BaseModel):
     username: str
-    email: str
     rcsid: str
     isdriver: bool
     password: str
@@ -103,6 +102,8 @@ class UserInput(BaseModel):
     username: str
     rcsid: str
     isdriver: bool
+    email: str
+    rides: list[int] | None = None 
 
 # returns json with user info
 class UserOutput(BaseModel):
@@ -115,7 +116,9 @@ class UserOutput(BaseModel):
 # maybe put config in here
 class RideWithETA(BaseModel):
     ride: RideResponse
-    eta_seconds: int | None = None
+    detour_eta: int | None = None # time from the ride arriaval address to the users desired address
+    # detour is a bad name but its just saying how long it would take if the driver doesnt help you get there
+    true_eta: int | None = None # time from the ride orgin to the users desired address
 
 # this is the response model for upcoming/previous rides
 class RideListResponse(BaseModel):
@@ -215,7 +218,8 @@ def read_ride(ride_id: int, db: Session = Depends(get_db)):
 with open(os.path.join(os.path.dirname(__file__), "params.json")) as f:
     _params = json.load(f)
 DISTANCE_LIMIT = _params["DISTANCE_LIMIT"] # how far away do we set teh bounding box
-GET_ETA_COUNT = _params["GET_ETA_COUNT"] # how many candidates do we send to the API to get ETAs for 
+GET_ETA_COUNT = _params["GET_ETA_COUNT"] # how many candidates do we send to the API to get ETAs for
+ROUTING_PREF = "TRAFFIC_AWARE" if _params["TRAFFIC_AWARE"] else "TRAFFIC_UNAWARE"
 # end point example GET /search_rides/123%20Main%20St/2024-06-01T12:00:00Z  where its a str address and an iso date
 @app.get("/search_rides/{address}/{date}", response_model=list[RideWithETA])
 def search_rides(address: str, date: str, db: Session = Depends(get_db)):
@@ -264,19 +268,36 @@ def search_rides(address: str, date: str, db: Session = Depends(get_db)):
             "origins": [{"waypoint": {"location": {"latLng": {"latitude": lat, "longitude": lon}}}}],
             "destinations": destinations,
             "travelMode": "DRIVE", # we can change this down the line
-            "routingPreference": "TRAFFIC_AWARE"
+            "routingPreference": ROUTING_PREF
         }
     )
     matrix_resp = raw.json()
-    # make the dict
-    eta_map = {entry.get("destinationIndex", 0): int(float(entry["duration"].rstrip("s"))) for entry in matrix_resp if "duration" in entry}
-    # sort by eta
+    # get each ride's overall ETA (origin -> address)
+    trip_resp = requests.post(
+        "https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix",
+        headers={
+            "X-Goog-Api-Key": GOOGLE_API_KEY,
+            "X-Goog-FieldMask": "originIndex,destinationIndex,duration,status"
+        },
+        json={
+            "origins": [{"waypoint": {"address": r.orgin}} for r in rides],
+            "destinations": [{"waypoint": {"address": r.address}} for r in rides],
+            "travelMode": "DRIVE",
+            "routingPreference": ROUTING_PREF
+        }
+    ).json()
+    # make the dict: detour_eta (user detour) + full_eta (ride origin->dest)
+    eta_map = {}
+    for i, r in enumerate(rides):
+        eta_map[i] = {
+            "detour_eta": next((int(float(e["duration"].rstrip("s"))) for e in matrix_resp if "duration" in e and e.get("destinationIndex", 0) == i), None),
+            "true_eta": next((int(float(e["duration"].rstrip("s"))) for e in trip_resp if "duration" in e and e.get("originIndex", 0) == i and e.get("destinationIndex", 0) == i), None)
+        }
+    # sort by full_eta
     rides_with_eta = sorted(
-        [RideWithETA(ride=RideResponse.model_validate(r), eta_seconds=eta_map.get(i)) for i, r in enumerate(rides)],
-        key=lambda x: x.eta_seconds if x.eta_seconds is not None else float("inf")
+        [RideWithETA(ride=RideResponse.model_validate(r), detour_eta=eta_map[i]["detour_eta"], true_eta=eta_map[i]["true_eta"]) for i, r in enumerate(rides)],
+        key=lambda x: x.true_eta if x.true_eta is not None else float("inf")
     )
-    #convert rides to response model Ride with ETA
-    rides_with_eta = [RideWithETA(ride=RideResponse.model_validate(r), eta_seconds=eta_map.get(i)) for i, r in enumerate(rides)]
     return rides_with_eta
 
 
@@ -328,7 +349,8 @@ def add_user(user: UserInput, db: Session = Depends(get_db)):
     new_user = models.User(
         username=user.username,
         rcsid=user.rcsid,
-        isdriver=user.isdriver
+        isdriver=user.isdriver,
+        rides = []
     )
     try:
         db.add(new_user)
@@ -346,6 +368,17 @@ def get_userid(rcsid: str, db: Session = Depends(get_db)):
         return {"id": user.id}
     else:
         raise HTTPException(status_code=404, detail="User not found")
+@app.get("/get_map")
+def get_map():
+    resp = requests.get(
+        "https://maps.googleapis.com/maps/api/js",
+        params={"key": GOOGLE_API_KEY, "libraries": "places", "callback": "initMap"}
+    )
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail="Failed to load Maps API")
+    from fastapi.responses import Response
+    return Response(content=resp.text, media_type="application/javascript")
+
 # Serve frontend static assets and additional pages (post.html, ride.html, etc.)
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 
