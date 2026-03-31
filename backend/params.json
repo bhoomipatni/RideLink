@@ -1,5 +1,6 @@
 {
     "README": "Ts contains params used in main.py",
-    "DISTANCE_LIMIT": 0.1,
-    "GET_ETA_COUNT" : 10
+    "DISTANCE_LIMIT": 0.3,
+    "GET_ETA_COUNT" : 10,
+    "TRAFFIC_AWARE" : true
 }
