@@ -45,16 +45,7 @@ class Rides(Base):
     lat = Column(Float, nullable=False)
     lon = Column("long", Float, nullable=False)
     riders = Column(ARRAY(String(50)), nullable=True)
-
-class Notifications(Base):
-    __tablename__ = 'Notifications'
-    rcsid = Column(String(50), primary_key=True, nullable=False)
-    rideid = Column(Integer, primary_key=True, nullable=False)
-    status = Column(String(500), nullable=False)
-
 # create all tables
-
-
 Base.metadata.create_all(engine)
 
 

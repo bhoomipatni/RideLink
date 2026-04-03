@@ -359,6 +359,9 @@ def get_map():
     from fastapi.responses import Response
     return Response(content=resp.text, media_type="application/javascript")
 
+# Serve frontend static assets and additional pages (post.html, ride.html, etc.)
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
+
 # returns current and any upcoming rides
 @app.get("/upcoming_rides", response_model=RideListResponse)
 def get_upcoming_rides(db: Session = Depends(get_db)):
@@ -419,53 +422,6 @@ def cancel_ride(ride_id: int, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
 
-
-@app.post("/request_join/{ride_id}")
-def request_join(ride_id: int, db: Session = Depends(get_db)):
-    ride = db.query(models.Rides).filter_by(id=ride_id).first()
-    if not ride:
-        raise HTTPException(status_code=404, detail="Ride not found")
-    user_id = "bigj" # get_current_user(Request, db).rcsid harcoded until login is ready
-    user = db.query(models.User).filter_by(rcsid=user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    notification = models.Notifications(
-        rcsid=ride.driverid,
-        rideid=ride.id,
-        status=f"{user.username} has requested to join your ride from {ride.orgin} to {ride.address} on {ride.date}"
-    )
-    try:
-        db.add(notification)
-        db.commit()
-        return notification
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@app.post("/decide_join/{ride_id}/{accept}")
-def decide_join(ride_id: int, accept: bool, db: Session = Depends(get_db)):
-    ride = db.query(models.Rides).filter_by(id=ride_id).first()
-    if not ride:
-        raise HTTPException(status_code=404, detail="Ride not found")
-    user_id = "bigj" # get_current_user(Request, db).rcsid harcoded until login is ready
-    if ride.driverid != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized to make this decision")
-    notification = db.query(models.Notifications).filter_by(rcsid=ride.driverid, rideid=ride.id).first()
-    if not notification:
-        raise HTTPException(status_code=404, detail="Notification not found")
-    if accept:
-        user = db.query(models.User).filter_by(rcsid=notification.rcsid).first()
-        ride.riders.append(user.rcsid)
-        notification.status = f"Your request to join the ride from {ride.orgin} to {ride.address} on {ride.date} has been accepted"
-    else:
-        notification.status = f"Your request to join the ride from {ride.orgin} to {ride.address} on {ride.date} has been rejected"
-    try:
-        db.commit()
-        return {"detail": "Decision processed successfully"}
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
 # Pydantic model for request body
 class PaymentRequest(BaseModel):
     venmo_username: str = None
@@ -503,6 +459,3 @@ def update_payment(payment_req: PaymentRequest, current_user: User = Depends(get
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         session.close()
-
-# Serve frontend static assets and additional pages (post.html, ride.html, etc.)
-app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
