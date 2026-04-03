@@ -1,6 +1,7 @@
 from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.ext.mutable import MutableList
 
-from sqlalchemy import Boolean, Float, create_engine, Column, Integer, String, DateTime
+from sqlalchemy import Boolean, Float, ForeignKey, create_engine, Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import Float, Boolean
@@ -13,21 +14,19 @@ load_dotenv()
 
 Base = declarative_base()
 
-# update postgres address as needed
 database_url = os.getenv('DATABASE_URL')
 
 if not database_url:
     raise RuntimeError("DATABASE_URL environment variable is not set. Please configure DATABASE_URL before starting the application.")
-engine = create_engine(database_url)
+engine = create_engine(database_url, pool_pre_ping=True, pool_recycle=300)
 
-# example model
 class User(Base):
     __tablename__ = 'Users'
+    username = Column(String(50), nullable=False)
     isdriver = Column(Boolean, nullable=False, default=False)
     rcsid = Column(String(50), primary_key=True, unique=True, nullable=False)
     rides = Column(ARRAY(Integer), nullable=True) # this is just a list of ride ids, can be null if no rides
 
-    password = Column(String(100), nullable=False)
     # Payment info directly in User
     venmo_username = Column(String(50), nullable=True)
     paypal_email = Column(String(100), nullable=True)
@@ -38,7 +37,7 @@ class Rides(Base):
     id = Column(Integer, primary_key=True,)  # postgreSQL uses serial so no need for autoincrement
     driverid = Column(String(200), nullable=False)
     address = Column(String(200), nullable=False)
-    orgin = Column(String(200), nullable=False)
+    origin = Column(String(200), nullable=False)
     cost = Column(Float, nullable=False, default=0.0)
     isactive = Column(Boolean, default=True, nullable=False)
     description = Column(String(500), nullable=True)
