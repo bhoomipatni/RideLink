@@ -66,10 +66,29 @@ def test_get_upcoming_rides():
 
 
 def test_get_ride():
-    create = client.post("/request_ride", json={"driverid": "testuser", "address": "1600 Pennsylvania Avenue NW", "origin": "456 Elm St", "cost": 10.0, "lat": 40.7128, "lon": -74.0060})
-    assert create == 200
+    create = client.post("/request_ride", json={"driverid": "testuser", "address": "1600 Pennsylvania Avenue NW", "origin": "456 Elm St", "cost": 10.0,})
+    assert create.status_code == 200
     ride_id = create.json()["id"]
     response = client.get(f"/rides/{ride_id}")
     assert response.status_code == 200
     assert response.json()["id"] == ride_id
     assert response.json()["driverid"] == "testuser"
+
+
+def test_get_user():
+    create = client.post("/add_user", json={"username": "The Tester", "rcsid": "testuser", "isdriver": True})
+    assert create.status_code == 200
+    response = client.get("/users/testuser")
+    assert response.status_code == 200
+    assert response.json()["rcsid"] == "testuser"
+    assert response.json()["username"] == "The Tester"
+    assert response.json()["isdriver"] == True
+
+def test_complete_ride():
+    create = client.post("/request_ride", json={"driverid": "testuser", "address": "1600 Pennsylvania Avenue NW", "origin": "456 Elm St", "cost": 10.0, "lat": 40.7128, "lon": -74.0060})
+    assert create.status_code == 200
+    ride_id = create.json()["id"]
+    response = client.post(f"/complete_ride/{ride_id}")
+    assert response.status_code == 200
+    assert response.json()["id"] == ride_id
+    assert response.json()["isactive"] == False
