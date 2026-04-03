@@ -1,6 +1,7 @@
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.mutable import MutableList
-from sqlalchemy import Boolean, Float, create_engine, Column, Integer, String, DateTime
+
+from sqlalchemy import Boolean, Float, ForeignKey, create_engine, Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import Float, Boolean
@@ -17,7 +18,7 @@ database_url = os.getenv('DATABASE_URL')
 
 if not database_url:
     raise RuntimeError("DATABASE_URL environment variable is not set. Please configure DATABASE_URL before starting the application.")
-engine = create_engine(database_url)
+engine = create_engine(database_url, pool_pre_ping=True, pool_recycle=300)
 
 class User(Base):
     __tablename__ = 'Users'
