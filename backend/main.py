@@ -73,23 +73,17 @@ async def prepare_saml_request(request: Request):
 class RideRequest(BaseModel):
     driverid: int
     address: str
-    orgin: str
+    origin: str
     cost: float
     description: str | None = None
     date: datetime.datetime
-
-class putUser(BaseModel):
-    username: str
-    rcsid: str
-    isdriver: bool
-    password: str
 
 class RideResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     driverid: int
     address: str
-    orgin: str
+    origin: str
     cost: float
     isactive: bool
     description: str | None = None
@@ -123,16 +117,15 @@ class RideWithETA(BaseModel):
 class RideListResponse(BaseModel):
     rides: list[RideResponse]
 
-class Notification(BaseModel):
-    rcsid: str
-    rideid: int
-    status: str
+# @app.get("/")
+# async def read_root():
+#     index_path = os.path.join(FRONTEND_DIR, "index.html")
+#     return FileResponse(index_path)
+
 
 @app.get("/")
-async def read_root():
-    index_path = os.path.join(FRONTEND_DIR, "index.html")
-    return FileResponse(index_path)
-
+async def basic():
+    return {"msg": "Hello World"}
 
 @app.get("/login")
 async def login(request: Request):
@@ -146,19 +139,12 @@ async def callback(request: Request):
     req = await prepare_saml_request(request)
     auth = init_saml_auth(req)
     auth.process_response()
-    # errors = auth.get_errors()
 
     rcsid = auth.get_nameid()
     token = jwt.encode({"rcsid": rcsid}, os.getenv("SAML_PRIVATE_KEY"), algorithm="HS256")
     response = RedirectResponse(url="/", status_code=302)
     response.set_cookie("session", token)
     return response
-    # if errors:
-    #     return {"errors": errors}
-    # return {
-    #     "name_id": auth.get_nameid(),
-    #     "attributes": auth.get_attributes(),
-    # }
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
     token = request.cookies.get("session")
@@ -191,6 +177,24 @@ def read_ride(ride_id: int, db: Session = Depends(get_db)):
         return RideResponse.model_validate(ride)
     else:
         raise HTTPException(status_code=404, detail="Ride not found")
+    
+@app.post("/rides/{ride_id}/add_rider")
+def add_rider(ride_id: int, db: Session = Depends(get_db)):
+    ride = db.query(models.Rides).filter_by(id=ride_id).first()
+    if not ride:
+        raise HTTPException(status_code=404, detail="Ride not found")
+    user_id = get_current_user(Request, db).rcsid
+    user = db.query(models.User).filter_by(rcsid=user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.rides.append(ride.id)
+    try:
+        db.commit()
+        db.refresh(ride)
+        return RideResponse.model_validate(ride)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
 
 # ride search by address
 # get from json
@@ -290,8 +294,13 @@ def read_user(user_id: str, db: Session = Depends(get_db)):
 
 @app.post("/request_ride")
 def request_ride(ride: RideRequest, db: Session = Depends(get_db)):
+    # check user is actually a driver
+    user = get_current_user(Request, db)
+    if not user.isdriver:
+        raise HTTPException(status_code=403, detail="Register as a driver to post rides")
+
     # get lat and lon from address using Google Geocoding API
-    print(f"Requesting ride with address {ride.address} and origin {ride.orgin}")
+    print(f"Requesting ride with address {ride.address} and origin {ride.origin}")
     print(f"Requesting ride with date {ride.date}")
     print(f"Requesting ride with driver id {ride.driverid}")
     geo = requests.get(
@@ -305,7 +314,7 @@ def request_ride(ride: RideRequest, db: Session = Depends(get_db)):
     lat, lon = location["lat"], location["lng"]
     new_ride = models.Rides(
         driverid=ride.driverid,
-        orgin =ride.orgin,
+        origin =ride.origin,
         address=ride.address,
         cost=ride.cost,
         description=ride.description,
@@ -365,8 +374,7 @@ app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 # returns current and any upcoming rides
 @app.get("/upcoming_rides", response_model=RideListResponse)
 def get_upcoming_rides(db: Session = Depends(get_db)):
-    user_id = get_current_user(Request, db).rcsid
-    user = db.query(models.User).filter_by(rcsid=user_id).first()
+    user = get_current_user(Request, db)
     
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
