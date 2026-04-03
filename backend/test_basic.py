@@ -9,7 +9,7 @@ from backend.models import Base, User
 
 @pytest.fixture(scope="session")
 def db_engine():
-    database_url = os.getenv('DATABASE_URL')
+    database_url = os.getenv('TEST_DATABASE_URL')
     engine = create_engine(database_url)
     Base.metadata.create_all(engine)
     yield engine
@@ -85,10 +85,12 @@ def test_get_user():
     assert response.json()["isdriver"] == True
 
 def test_complete_ride():
-    create = client.post("/request_ride", json={"driverid": "testuser", "address": "1600 Pennsylvania Avenue NW", "origin": "456 Elm St", "cost": 10.0, "lat": 40.7128, "lon": -74.0060})
+    create = client.post("/request_ride", json={"driverid": "testuser", "address": "1600 Pennsylvania Avenue NW", "origin": "456 Elm St", "cost": 10.0,})
     assert create.status_code == 200
     ride_id = create.json()["id"]
     response = client.post(f"/complete_ride/{ride_id}")
     assert response.status_code == 200
     assert response.json()["id"] == ride_id
     assert response.json()["isactive"] == False
+
+
