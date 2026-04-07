@@ -26,9 +26,3 @@ CREATE TABLE "Rides"(
 );
 ALTER TABLE
     "Rides" ADD CONSTRAINT "rides_id_unique" UNIQUE("id");
-CREATE TABLE "Notifications"(
-    "rcsid" VARCHAR(255) NOT NULL,
-    "rideid" BIGINT NOT NULL,
-    "status" VARCHAR(255) NOT NULL,
-    PRIMARY KEY ("rcsid", "rideid")
-);
