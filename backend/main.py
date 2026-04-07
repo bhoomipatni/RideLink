@@ -376,13 +376,11 @@ def get_previous_rides(db: Session = Depends(get_db), current_user = Depends(get
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    rides = db.query(user.rides).filter(
-        models.Rides.date < datetime.datetime.now(datetime.timezone.utc), 
+    rides = db.query(models.Rides).filter(
+        models.Rides.date < datetime.datetime.now(datetime.timezone.utc),
         models.Rides.isactive == False).all()
-    
-    if not rides:
-        raise HTTPException(status_code=404, detail="No previous rides found")
-    return RideListResponse(rides=rides)
+
+    return RideListResponse(rides=rides or [])
 
 
 @app.post("/complete_ride/{ride_id}")

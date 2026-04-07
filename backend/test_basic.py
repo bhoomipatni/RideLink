@@ -93,4 +93,32 @@ def test_complete_ride():
     assert response.json()["id"] == ride_id
     assert response.json()["isactive"] == False
 
+def test_cancel_ride():
+    create = client.post("/request_ride", json={"driverid": "testuser", "address": "1600 Pennsylvania Avenue NW", "origin": "456 Elm St", "cost": 10.0,})
+    assert create.status_code == 200, create.json()
+    ride_id = create.json()["id"]
+    response = client.post(f"/cancel_ride/{ride_id}")
+    assert response.status_code == 200
+    assert response.json() == {"detail": "Ride cancelled successfully"}
+
+def test_add_rider():
+    client.post("/add_user", json={"username": "The Tester", "rcsid": "testuser", "isdriver": True})
+    create = client.post("/request_ride", json={"driverid": "testuser", "address": "1600 Pennsylvania Avenue NW", "origin": "456 Elm St", "cost": 10.0,})
+    assert create.status_code == 200, create.json()
+    ride_id = create.json()["id"]
+    response = client.post(f"/rides/{ride_id}/add_rider")
+    assert response.status_code == 200
+    assert response.json()["id"] == ride_id
+
+def test_previous_rides():
+    client.post("/add_user", json={"username": "The Tester", "rcsid": "testuser", "isdriver": True})
+    create = client.post("/request_ride", json={"driverid": "testuser", "address": "1600 Pennsylvania Avenue NW", "origin": "456 Elm St", "cost": 10.0,})
+    assert create.status_code == 200, create.json()
+    ride_id = create.json()["id"]
+    complete = client.post(f"/complete_ride/{ride_id}")
+    assert complete.status_code == 200
+    response = client.get("/previous_rides")
+    assert response.status_code == 200
+    assert isinstance(response.json()["rides"], list)
+
 
