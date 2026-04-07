@@ -104,6 +104,7 @@ class UserOutput(BaseModel):
     username: str
     rcsid: str
     isdriver: bool
+    rides: list[int] | None = None
 
 # this is response model for search function that returns a dict with ride info and eta in seconds to the ride
 # maybe put config in here
@@ -255,7 +256,7 @@ def search_rides(address: str, date: str, db: Session = Depends(get_db)):
             "X-Goog-FieldMask": "originIndex,destinationIndex,duration,status"
         },
         json={
-            "origins": [{"waypoint": {"address": r.orgin}} for r in rides],
+            "origins": [{"waypoint": {"address": r.origin}} for r in rides],
             "destinations": [{"waypoint": {"address": r.address}} for r in rides],
             "travelMode": "DRIVE",
             "routingPreference": ROUTING_PREF
@@ -379,10 +380,12 @@ def get_previous_rides(db: Session = Depends(get_db), current_user = Depends(get
 
 
 @app.post("/complete_ride/{ride_id}")
-def complete_ride(ride_id: int, db: Session = Depends(get_db)):
+def complete_ride(ride_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     ride = db.query(models.Rides).filter_by(id=ride_id).first()
     if not ride:
         raise HTTPException(status_code=404, detail="Ride not found")
+    if ride.driverid != current_user.rcsid:
+        raise HTTPException(status_code=403, detail="Only the driver can complete this ride")
     ride.isactive = False
     try:
         db.commit()
@@ -393,10 +396,12 @@ def complete_ride(ride_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/cancel_ride/{ride_id}")
-def cancel_ride(ride_id: int, db: Session = Depends(get_db)):
+def cancel_ride(ride_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     ride = db.query(models.Rides).filter_by(id=ride_id).first()
     if not ride:
         raise HTTPException(status_code=404, detail="Ride not found")
+    if ride.driverid != current_user.rcsid:
+        raise HTTPException(status_code=403, detail="Only the driver can cancel this ride")
     db.delete(ride)
     try:
         db.commit()
