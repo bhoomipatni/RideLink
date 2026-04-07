@@ -86,7 +86,7 @@ def test_get_user():
 
 def test_complete_ride():
     create = client.post("/request_ride", json={"driverid": "testuser", "address": "1600 Pennsylvania Avenue NW", "origin": "456 Elm St", "cost": 10.0,})
-    assert create.status_code == 200
+    assert create.status_code == 200, create.json()
     ride_id = create.json()["id"]
     response = client.post(f"/complete_ride/{ride_id}")
     assert response.status_code == 200
