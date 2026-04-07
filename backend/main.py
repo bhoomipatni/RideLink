@@ -359,7 +359,7 @@ def get_map():
 def get_upcoming_rides(db: Session = Depends(get_db), user = Depends(get_current_user)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    rides = db.query(user.rides).filter(
+    rides = db.query(models.Rides).filter(
         models.Rides.date > datetime.datetime.now(datetime.timezone.utc),
         models.Rides.isactive == True).all()
     

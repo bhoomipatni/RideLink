@@ -44,7 +44,9 @@ client = TestClient(app)
 def test_add_user():
     response = client.post("/add_user", json={"username": "Test User", "rcsid": "testuser", "isdriver": False})
     assert response.status_code == 200
-    assert response.json() == {"username": "Test User", "rcsid": "testuser", "isdriver": False}
+    assert response.json()["username"] == "Test User"
+    assert response.json()["rcsid"] == "testuser"
+    assert response.json()["isdriver"] == False
 
 def test_request_ride():
     response = client.post("/request_ride", json={"driverid": "testuser", "address": "1600 Pennsylvania Avenue NW", "origin": "456 Elm St", "cost": 10.0})

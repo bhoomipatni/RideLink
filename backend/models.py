@@ -25,7 +25,7 @@ class User(Base):
     username = Column(String(50), nullable=False)
     isdriver = Column(Boolean, nullable=False, default=False)
     rcsid = Column(String(50), primary_key=True, unique=True, nullable=False)
-    rides = Column(ARRAY(Integer), nullable=True) # this is just a list of ride ids, can be null if no rides
+    rides = Column(MutableList.as_mutable(ARRAY(Integer)), nullable=True) # this is just a list of ride ids, can be null if no rides
 
     # Payment info directly in User
     venmo_username = Column(String(50), nullable=True)
