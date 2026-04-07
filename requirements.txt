@@ -44,3 +44,5 @@ watchfiles==1.1.1
 websockets==16.0
 jwt==2.7.0
 python3-saml==2.7.0
+requests==2.32.3
+pytest==8.3.5
