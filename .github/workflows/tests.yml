@@ -27,7 +27,7 @@ jobs:
 
     env:
       DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
-      TEST_DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+      TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
       SAML_PRIVATE_KEY: ${{ secrets.SAML_PRIVATE_KEY }}
       GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
 
