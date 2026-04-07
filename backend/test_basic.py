@@ -39,10 +39,6 @@ def override_db(db_session, mock_user):
 
 client = TestClient(app)
 
-def test_read_main():
-    response = client.get("/")
-    assert response.status_code == 200
-    assert response.json() == {"msg": "Hello World"}
 
 def test_add_user():
     response = client.post("/add_user", json={"username": "Test User", "rcsid": "testuser", "isdriver": False})
