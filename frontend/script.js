@@ -21,6 +21,8 @@ async function loadIndTrip() {
     document.getElementById('cost').textContent = `$${trip.cost}`;
     document.getElementById('payment').textContent = trip.payment_method;
     document.getElementById('riders').textContent = `${trip.num_riders} other riders`;
+    document.getElementById("driverName").textContent = trip.driver;
+    document.getElementById("avatar").textContent = trip.driver.charAt(0).toUpperCase();
 }
 loadIndTrip.apply();
 

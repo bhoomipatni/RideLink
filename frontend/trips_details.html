@@ -1,17 +1,18 @@
 <!-- this is the html file that can display a specific trip's full, detailed info -->
 <!DOCTYPE html>
-<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RideLink — Campus Ridesharing</title>
+  <title>RideLink — Trip Detail</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
-  <nav>
-    <div class="logo">
+  <header>
+    <div class="container">
+      <nav>
+        <div class="logo">
           <a href="index.html">
             <img src="RideLink.png" alt="RideLink logo" />
           </a>
@@ -28,30 +29,70 @@
               <a href="/login">Log In</a>
               <a href="#signup">Sign Up</a>
               <a href="#settings">Settings</a>
-
-              <header class="top-bar">
-                <div class="brand">
-                  <div class="logo">RL</div>
-                  <div>
-                    <img src="static/RideLink.png" width="150" height="80">
-                  </div>
-                </div>
             </div>
           </div>
-        </nav>
+        </div>
+      </nav>
+    </div>
+  </header>
 
-  <div class="trip-card">
-    <h1>Your Trip: <span id="destination"></span></h1>
-    <h3 id="timeNdriver"></h3>
+  <main>
+    <div class="detail-page">
+      <a class="back-link" href="trips.html">← My Trips</a>
 
-    <h2>Trip Details:</h2>
-    <h3 id="distance"></h3>
-    <h3 id="cost"></h3>
-    <h3 id="payment"></h3>
-    <h3 id="riders"></h3>
-  </div>
+      <div class="detail-card">
+        <div class="detail-header">
+          <div class="label">Your trip</div>
+          <h1 id="destination"></h1>
+          <div class="meta" id="timeNdriver"></div>
+        </div>
+
+        <div class="detail-body">
+          <div class="detail-section-label">Trip summary</div>
+          <div class="stats-grid">
+            <div class="stat-box">
+              <div class="stat-val" id="cost"></div>
+              <div class="stat-lbl">Total cost</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-val" id="distance"></div>
+              <div class="stat-lbl">Distance</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-val" id="riders"></div>
+              <div class="stat-lbl">Other riders</div>
+            </div>
+          </div>
+
+          <div class="detail-section-label">Driver</div>
+          <div class="driver-row">
+            <div class="driver-avatar" id="avatar"></div>
+            <div>
+              <div class="driver-name" id="driverName"></div>
+              <div class="driver-sub">Driver</div>
+            </div>
+          </div>
+
+          <hr class="detail-divider">
+
+          <div class="detail-section-label">Details</div>
+          <div class="detail-row">
+            <span class="detail-key">Payment method</span>
+            <span class="detail-val" id="payment"></span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-key">Status</span>
+            <span class="detail-val"><span class="status-pill">Confirmed</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer id="contact">
+    <p>© 2026 RideLink. Built for students.</p>
+  </footer>
 
   <script src="script.js"></script>
-
 </body>
 </html>
