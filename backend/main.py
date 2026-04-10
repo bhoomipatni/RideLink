@@ -15,6 +15,9 @@ from dotenv import load_dotenv
 from onelogin.saml2.auth import OneLogin_Saml2_Auth
 from onelogin.saml2.metadata import OneLogin_Saml2_Metadata
 import jwt
+from fastapi.responses import StreamingResponse
+from collections import defaultdict
+import asyncio
 
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
@@ -118,15 +121,76 @@ class RideWithETA(BaseModel):
 class RideListResponse(BaseModel):
     rides: list[RideResponse]
 
-# @app.get("/")
-# async def read_root():
-#     index_path = os.path.join(FRONTEND_DIR, "index.html")
-#     return FileResponse(index_path)
+def get_current_user(request: Request, db: Session = Depends(get_db)):
+    token = request.cookies.get("session")
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    try:
+        payload = jwt.decode(token, os.getenv("SAML_PRIVATE_KEY"), algorithms=["HS256"])
+        rcsid = str(payload["rcsid"])
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    if not rcsid:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    user = db.query(models.User).filter_by(rcsid=rcsid).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
 
+####### WIP SSE notifications system ########
+# In-memory SSE connections: rcsid -> list of queues
+_sse_connections: dict[str, list[asyncio.Queue]] = defaultdict(list)
+
+async def push_notification(db: Session, rcsid: str, title: str, body: str):
+    """Save to DB and push to any live SSE connections for this user."""
+    notif = models.Notification(user_rcsid=rcsid, title=title, body=body)
+    db.add(notif)
+    db.commit()
+    db.refresh(notif)
+
+    message = {
+        "id": notif.id,
+        "title": notif.title,
+        "body": notif.body,
+        "read": notif.read,
+        "created_at": notif.created_at.isoformat(),
+    }
+    for queue in _sse_connections.get(rcsid, []):
+        await queue.put(message)
+
+
+@app.get("/notifications/stream")
+async def notification_stream(current_user: User = Depends(get_current_user)):
+    queue: asyncio.Queue = asyncio.Queue()
+    _sse_connections[current_user.rcsid].append(queue)
+
+    async def event_generator():
+        try:
+            while True:
+                message = await queue.get()
+                yield f"data: {json.dumps(message)}\n\n"
+        except asyncio.CancelledError:
+            pass
+        finally:
+            _sse_connections[current_user.rcsid].remove(queue)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+########## end SSE notification code, rest is normal endpoints ##########
 
 @app.get("/")
-async def basic():
-    return {"msg": "Hello World"}
+async def read_root():
+    index_path = os.path.join(FRONTEND_DIR, "index.html")
+    return FileResponse(index_path)
+
+
+# @app.get("/")
+# async def basic():
+#     return {"msg": "Hello World"}
 
 @app.get("/login")
 async def login(request: Request):
@@ -146,22 +210,6 @@ async def callback(request: Request):
     response = RedirectResponse(url="/", status_code=302)
     response.set_cookie("session", token)
     return response
-
-def get_current_user(request: Request, db: Session = Depends(get_db)):
-    token = request.cookies.get("session")
-    if not token:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    try:
-        payload = jwt.decode(token, os.getenv("SAML_PRIVATE_KEY"), algorithms=["HS256"])
-        rcsid = str(payload["rcsid"])
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    if not rcsid:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    user = db.query(models.User).filter_by(rcsid=rcsid).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
 
 @app.get("/metadata", response_class=HTMLResponse)
 def metadata():
@@ -271,6 +319,7 @@ def search_rides(address: str, date: str, db: Session = Depends(get_db)):
         }
     ).json()
     # make the dict: detour_eta (user detour) + full_eta (ride origin->dest)
+    
     eta_map = {}
     for i, r in enumerate(rides):
         eta_map[i] = {
@@ -467,3 +516,5 @@ def update_payment(payment_req: PaymentRequest, current_user: User = Depends(get
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         session.close()
+
+

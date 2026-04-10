@@ -44,7 +44,17 @@ class Rides(Base):
     date = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), nullable=False)
     lat = Column(Float, nullable=False)
     lon = Column("long", Float, nullable=False)
-    
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_rcsid = Column(String, ForeignKey("users.rcsid"), nullable=False, index=True)
+    title = Column(String, nullable=False)
+    body = Column(String)
+    read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
 # create all tables
 Base.metadata.create_all(engine)
 
