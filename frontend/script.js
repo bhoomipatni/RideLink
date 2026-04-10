@@ -18,11 +18,17 @@ async function loadIndTrip() {
     document.getElementById('destination').textContent = trip.destination;
     document.getElementById('timeNdriver').textContent = `${trip.day} ${trip.date} @ ${trip.time} with ${trip.driver}`;
     document.getElementById('distance').textContent = `${trip.distance} miles`;
-    document.getElementById('cost').textContent = `$${trip.cost}`;
+    document.getElementById('cost').textContent = `$${Number(trip.cost).toFixed(2)}`;
     document.getElementById('payment').textContent = trip.payment_method;
     document.getElementById('riders').textContent = `${trip.num_riders} other riders`;
     document.getElementById("driverName").textContent = trip.driver;
-    document.getElementById("avatar").textContent = trip.driver.charAt(0).toUpperCase();
+    document.getElementById("avatar").textContent = trip.driver.charAt(0).toUpperCase(); //shows a profile circle with their initial, 
+    // ^ don't know if we want to let them import pictures later on
+    
+    //this is for the status of whether or not the trip is confirmed
+    const statusEl = document.getElementById('status');
+    statusEl.textContent = trip.status;
+    statusEl.className = `status-pill status-${trip.status.toLowerCase()}`;
 }
 loadIndTrip.apply();
 
@@ -49,14 +55,24 @@ async function loadTrips(filter = 'upcoming') {
 
   document.getElementById('trip-list').innerHTML = '';
   toShow.forEach(trip => {
-    document.getElementById('trip-list').innerHTML += `
-      <a href="trips_details.html?id=${trip.id}" class="trip-card">
-        <h4>${trip.destination}</h4>
-        <p>${trip.date}</p>
-        <p>$${trip.cost}</p>
-      </a>
-    `;
-  });
+  const statusClass = `status-${trip.status.toLowerCase()}`;
+  document.getElementById('trip-list').innerHTML += `
+    <a href="trips_details.html?id=${trip.id}" class="trip-card">
+      <div class="trip-card-top">
+        <span class="trip-destination">${trip.destination}</span>
+        <span class="status-pill ${statusClass}">${trip.status}</span>
+      </div>
+      <div class="trip-card-meta">
+        <span>${trip.day} ${trip.date} @ ${trip.time}</span>
+        <span>with ${trip.driver}</span>
+      </div>
+      <div class="trip-card-bottom">
+        <span>${trip.distance} miles</span>
+        <span class="trip-cost">$${parseFloat(trip.cost).toFixed(2)}</span>
+      </div>
+    </a>
+  `;
+});
 }
 loadTrips();
 

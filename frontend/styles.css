@@ -230,30 +230,95 @@ section {
 }
 
 /* My Trips page */
+.trips-heading {
+  margin: 1.5rem 0 1rem;
+}
+
+.tab-bar {
+  display: flex;
+  gap: 0;
+  margin-bottom: 0;
+}
+
+.tab {
+  padding: 8px 20px;
+  border: 2px solid #e0e0e0;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  background: #f0f0f0;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.tab.active {
+  background: var(--primary);
+  color: white;
+  font-weight: bold;
+  border: 2px solid rgb(170, 0, 0);
+  border-bottom: none;
+  margin-bottom: -2px;
+  position: relative;
+  z-index: 1;
+}
+
 #trip-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   border: 2px solid rgb(170, 0, 0);
   border-radius: 0 8px 8px 8px;
   padding: 16px;
-  margin: 0px 100px 24px 100px;
-  background-color: red;
+  background-color: #fef2f2;
 }
 
 .trip-card {
   display: flex;
   flex-direction: column;
+  gap: 8px;
   padding: 16px;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
   text-decoration: none;
   color: inherit;
   background-color: white;
 }
 
 .trip-card:hover {
-  background-color: #f3f1f1;
+  border-color: var(--primary);
+  background-color: #fff8f8;
+}
+
+.trip-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.trip-destination {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.trip-card-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.trip-card-bottom {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--muted);
+  padding-top: 6px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.trip-cost {
+  font-weight: 600;
+  color: var(--text);
 }
 
 /* Tabs on My Trips page */
@@ -466,11 +531,25 @@ footer p {
   font-weight: 500;
 }
 
+/* Status for individual trip */
 .status-pill {
-  background: #fce8e8;
-  color: rgb(160, 15, 15);
   font-size: 12px;
   padding: 3px 10px;
   border-radius: 99px;
   font-weight: 600;
+}
+
+.status-confirmed { /*you joined ride successfully and driver confirmed it's still on*/
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-cancelled { /*driver cancelled ride*/
+  background: #fce8e8;
+  color: rgb(160, 15, 15);
+}
+
+.status-completed { /*ride was completed*/
+  background: #f1f5f9;
+  color: #475569;
 }

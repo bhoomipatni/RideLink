@@ -9,19 +9,22 @@
         "distance": 14.2,
         "cost": 24.50,
         "payment_method": "Venmo",
-        "num_riders": 2
+        "num_riders": 2,
+        "status": "confirmed"
+
     },
     {
         "id": 2,
         "destination": "Downtown",
         "day": "Tuesday",
-        "date": "March 10, 2026",
+        "date": "October 10, 2026",
         "time": "7:15 PM",
         "driver": "Schmidt",
         "distance": 32.8,
         "cost": 48.20,
         "payment_method": "PayPal",
-        "num_riders": 1
+        "num_riders": 1,
+        "status": "confirmed"
     },
     {
         "id": 3,
@@ -33,7 +36,8 @@
         "distance": 100,
         "cost": 80.324,
         "payment_method": "Other",
-        "num_riders": 4
+        "num_riders": 4,
+        "status": "completed"
     },
     {
         "id": 4,
@@ -45,6 +49,7 @@
         "distance": 200,
         "cost": 29.99,
         "payment_method": "Cash",
-        "num_riders": 3
+        "num_riders": 3,
+        "status": "cancelled"
     }
 ]
