@@ -84,10 +84,10 @@ searchBtn.addEventListener("click", async () => {
             let marker = new google.maps.Marker({
                 map: map,
                 position: pos,
-                title: `${r.orgin} → ${r.address}`,
+                title: `${r.origin} → ${r.address}`,
             });
             let infoWindow = new google.maps.InfoWindow({
-                content: `<strong>${r.orgin} → ${r.address}</strong><br>$${r.cost.toFixed(2)} · ${dateStr}`,
+                content: `<strong>${r.origin} → ${r.address}</strong><br>$${r.cost.toFixed(2)} · ${dateStr}`,
             });
             marker.addListener("click", () => infoWindow.open(map, marker));
             rideMarkers.push(marker);
@@ -97,7 +97,7 @@ searchBtn.addEventListener("click", async () => {
             resultsDiv.innerHTML += `
             <div class="ride-card">
                 <div class="ride-card-header">
-                    <span class="ride-origin">${r.orgin}</span>
+                    <span class="ride-origin">${r.origin}</span>
                     <span class="ride-arrow">→</span>
                     <span class="ride-dest">${r.address}</span>
                 </div>

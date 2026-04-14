@@ -156,7 +156,10 @@ async def callback(request: Request):
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
     # ⚠️ TEMPORARY OVERRIDE WITH HARDCODE FOR RN ⚠️
-    return db.query(models.User).filter_by(rcsid="oyong").first()
+    user = db.query(models.User).filter_by(rcsid="oyong").first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Hardcoded dev user 'oyong' not found in DB")
+    return user
     token = request.cookies.get("session")
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
