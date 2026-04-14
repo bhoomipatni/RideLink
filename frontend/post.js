@@ -11,9 +11,9 @@ submit.addEventListener("click", async () => {
             },
 
             body: JSON.stringify({
-                driverid: 1, // TODO: replace with real user id after login is done
+                driverid: "1", // TODO: replace with real user id after login is done
                 address: document.getElementById("end").value,
-                orgin: document.getElementById("start").value,
+                origin: document.getElementById("start").value,
                 date: new Date(document.getElementById("date").value + "T" + (document.getElementById("time").value || "00:00") + ":00").toISOString(),
                 cost: 10.50,
                 description: "I have snacks"
