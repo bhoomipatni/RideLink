@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Depends, Request
 from pydantic import BaseModel, ConfigDict
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
@@ -15,11 +16,22 @@ from dotenv import load_dotenv
 from onelogin.saml2.auth import OneLogin_Saml2_Auth
 from onelogin.saml2.metadata import OneLogin_Saml2_Metadata
 import jwt
+from apscheduler.schedulers.background import BackgroundScheduler
+from backend.check_rides import expire_old_rides
 
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(expire_old_rides, "interval", minutes=5, next_run_time=datetime.datetime.now())
+    scheduler.start()
+    app.state.scheduler = scheduler
+    yield
+    scheduler.shutdown()
+
+app = FastAPI(lifespan=lifespan)
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
 
 # Load SAML settings for auth endpoints on this main app.
@@ -143,6 +155,8 @@ async def callback(request: Request):
     return response
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
+    # ⚠️ TEMPORARY OVERRIDE WITH HARDCODE FOR RN ⚠️
+    return db.query(models.User).filter_by(rcsid="oyong").first()
     token = request.cookies.get("session")
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -286,10 +300,9 @@ def read_user(user_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
 
 @app.post("/request_ride")
-def request_ride(ride: RideRequest, db: Session = Depends(get_db), user = Depends(get_current_user)):
+def request_ride(request: Request, ride: RideRequest, db: Session = Depends(get_db), user = Depends(get_current_user)):
     if not user.isdriver:
         raise HTTPException(status_code=403, detail="Register as a driver to post rides")
-
     # get lat and lon from address using Google Geocoding API
     geo = requests.get(
         "https://maps.googleapis.com/maps/api/geocode/json",
@@ -314,6 +327,8 @@ def request_ride(ride: RideRequest, db: Session = Depends(get_db), user = Depend
         db.add(new_ride)
         db.commit()
         db.refresh(new_ride)
+        if hasattr(request.app.state, "scheduler"):
+            request.app.state.scheduler.add_job(expire_old_rides, "date", run_date=new_ride.date)
         return RideResponse.model_validate(new_ride)
     except Exception as e:
         db.rollback()
@@ -447,6 +462,11 @@ def update_payment(payment_req: PaymentRequest, current_user: User = Depends(get
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         session.close()
+
+@app.get("/debug/jobs")
+def debug_jobs(request: Request):
+    jobs = request.app.state.scheduler.get_jobs()
+    return [{"id": j.id, "next_run": str(j.next_run_time), "func": str(j.func_ref)} for j in jobs]
 
 # Serve frontend static assets and additional pages (post.html, ride.html, etc.)
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
