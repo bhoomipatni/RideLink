@@ -1,4 +1,3 @@
-annotated-doc==0.0.4
 annotated-types==0.7.0
 anyio==4.12.1
 certifi==2026.1.4
@@ -8,7 +7,6 @@ email-validator==2.3.0
 fastapi==0.128.7
 fastapi-cli==0.0.20
 fastapi-cloud-cli==0.11.0
-fastar==0.8.0
 h11==0.16.0
 httpcore==1.0.9
 httptools==0.7.1
@@ -29,7 +27,6 @@ python-multipart==0.0.22
 PyYAML==6.0.3
 rich==14.3.2
 rich-toolkit==0.19.2
-rignore==0.7.6
 sentry-sdk==2.52.0
 shellingham==1.5.4
 SQLAlchemy==2.0.46
@@ -42,5 +39,8 @@ uvicorn==0.40.0
 uvloop==0.22.1
 watchfiles==1.1.1
 websockets==16.0
-jwt==2.7.0
-python3-saml==2.7.0
+PyJWT==2.7.0
+python3-saml==1.16.0
+requests==2.32.3
+pytest==8.3.5
+APScheduler==3.11.0
