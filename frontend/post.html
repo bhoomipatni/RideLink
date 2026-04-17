@@ -21,10 +21,10 @@
         <div class="nav-links">
           <a href="post.html">Post a trip</a>
           <a href="ride.html">Find a Ride</a>
-          <a href="#My Trips">My Trips</a>
+          <a href="trips.html">My Trips</a>
           <a href="info.html">How It Works</a>
           <a href="contactUs.html">Contact Us</a>
-
+          <a href="#account">My Account</a>
           <div class="dropdown">
             <a class="dropdown-toggle">My Account ▾</a>
             <div class="dropdown-menu">
@@ -67,21 +67,34 @@
         </form>
       </div>
       <div class="form-image-stack">
+        
         <div class="form-image">
-          <img src="postAtripImage.webp" alt="image">
-        </div>
-        <div class="form-image">
-          <img src="RideLink.png" alt="image">
+          <img src="Ridelink (1).png" alt="image">
         </div>
       </div>
     </div>
   </section>
 
+  <h1>Post a Trip</h1>
+  <h2>Trip Details</h2>
+    <label for="startInput">Start Location:</label>
+    <input type="text" id="startInput" name="start"> <br>
+
+    <label for="endInput">Destination:</label>
+    <input type="text" id="endInput" name="end"><br>
+
+    <label for="leave-date">Leave Date:</label>
+    <input type="date" id="leave-date" name="leave-date"><br>
+
+    <label for="leave-time">Choose a time:</label>
+    <input type="time" id="leave-time" name="leave-time"><br>
+
+    <label for="seats">Number of Seats:</label>
+    <input type="number" id="seats" name="seats" step="1" min="1"><br>
 
   <footer id="contact">
     <p>© 2026 RideLink. Built for students.</p>
   </footer>
 
 </body>
-
 </html>

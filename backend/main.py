@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Depends, Request
 from pydantic import BaseModel, ConfigDict
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
@@ -15,11 +16,22 @@ from dotenv import load_dotenv
 from onelogin.saml2.auth import OneLogin_Saml2_Auth
 from onelogin.saml2.metadata import OneLogin_Saml2_Metadata
 import jwt
+from apscheduler.schedulers.background import BackgroundScheduler
+from backend.check_rides import expire_old_rides
 
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(expire_old_rides, "interval", minutes=5, next_run_time=datetime.datetime.now())
+    scheduler.start()
+    app.state.scheduler = scheduler
+    yield
+    scheduler.shutdown()
+
+app = FastAPI(lifespan=lifespan)
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
 
 # Load SAML settings for auth endpoints on this main app.
@@ -71,25 +83,19 @@ async def prepare_saml_request(request: Request):
 # Pydantic models
 # driver posts a ride with address, cost, description
 class RideRequest(BaseModel):
-    driverid: int
+    driverid: str
     address: str
-    orgin: str
+    origin: str
     cost: float
     description: str | None = None
-    date: datetime.datetime
-
-class putUser(BaseModel):
-    username: str
-    rcsid: str
-    isdriver: bool
-    password: str
+    date: datetime.datetime | None = None
 
 class RideResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
-    driverid: int
+    driverid: str
     address: str
-    orgin: str
+    origin: str
     cost: float
     isactive: bool
     description: str | None = None
@@ -102,7 +108,6 @@ class UserInput(BaseModel):
     username: str
     rcsid: str
     isdriver: bool
-    email: str
     rides: list[int] | None = None 
 
 # returns json with user info
@@ -111,6 +116,7 @@ class UserOutput(BaseModel):
     username: str
     rcsid: str
     isdriver: bool
+    rides: list[int] | None = None
 
 # this is response model for search function that returns a dict with ride info and eta in seconds to the ride
 # maybe put config in here
@@ -154,7 +160,6 @@ async def read_root():
     index_path = os.path.join(FRONTEND_DIR, "index.html")
     return FileResponse(index_path)
 
-
 @app.get("/login")
 async def login(request: Request):
     req = await prepare_saml_request(request)
@@ -167,21 +172,19 @@ async def callback(request: Request):
     req = await prepare_saml_request(request)
     auth = init_saml_auth(req)
     auth.process_response()
-    # errors = auth.get_errors()
 
     rcsid = auth.get_nameid()
     token = jwt.encode({"rcsid": rcsid}, os.getenv("SAML_PRIVATE_KEY"), algorithm="HS256")
     response = RedirectResponse(url="/", status_code=302)
     response.set_cookie("session", token)
     return response
-    # if errors:
-    #     return {"errors": errors}
-    # return {
-    #     "name_id": auth.get_nameid(),
-    #     "attributes": auth.get_attributes(),
-    # }
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
+    # ⚠️ TEMPORARY OVERRIDE WITH HARDCODE FOR RN ⚠️
+    user = db.query(models.User).filter_by(rcsid="oyong").first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Hardcoded dev user 'oyong' not found in DB")
+    return user
     token = request.cookies.get("session")
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -212,6 +215,23 @@ def read_ride(ride_id: int, db: Session = Depends(get_db)):
         return RideResponse.model_validate(ride)
     else:
         raise HTTPException(status_code=404, detail="Ride not found")
+    
+@app.post("/rides/{ride_id}/add_rider")
+def add_rider(ride_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    ride = db.query(models.Rides).filter_by(id=ride_id).first()
+    if not ride:
+        raise HTTPException(status_code=404, detail="Ride not found")
+    user = db.query(models.User).filter_by(rcsid=current_user.rcsid).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.rides.append(ride.id)
+    try:
+        db.commit()
+        db.refresh(ride)
+        return RideResponse.model_validate(ride)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
 
 # ride search by address
 # get from json
@@ -235,7 +255,6 @@ def search_rides(address: str, date: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Address not found")
     location = geo["results"][0]["geometry"]["location"]
     lat, lon = location["lat"], location["lng"]
-    print(f"Searching for rides near {address} at lat {lat} and lon {lon}")
     min_lat = lat - DISTANCE_LIMIT
     max_lat = lat + DISTANCE_LIMIT
     min_lon = lon - DISTANCE_LIMIT
@@ -251,7 +270,6 @@ def search_rides(address: str, date: str, db: Session = Depends(get_db)):
         models.Rides.date <= datetime.datetime.fromisoformat(date) + datetime.timedelta(hours=24),
     ).all()
     # sort rides by distance to address in degrees so we can get the top to send to the API
-    print(f"Found {len(rides)} rides in bounding box, sorting by distance and getting top {GET_ETA_COUNT} to send to API")
     rides.sort(key=lambda r: (r.lat - lat)**2 + (r.lon - lon)**2)
     rides = rides[:GET_ETA_COUNT]
     if not rides:
@@ -280,7 +298,7 @@ def search_rides(address: str, date: str, db: Session = Depends(get_db)):
             "X-Goog-FieldMask": "originIndex,destinationIndex,duration,status"
         },
         json={
-            "origins": [{"waypoint": {"address": r.orgin}} for r in rides],
+            "origins": [{"waypoint": {"address": r.origin}} for r in rides],
             "destinations": [{"waypoint": {"address": r.address}} for r in rides],
             "travelMode": "DRIVE",
             "routingPreference": ROUTING_PREF
@@ -310,38 +328,38 @@ def read_user(user_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
 
 @app.post("/request_ride")
-def request_ride(ride: RideRequest, db: Session = Depends(get_db)):
+def request_ride(request: Request, ride: RideRequest, db: Session = Depends(get_db), user = Depends(get_current_user)):
+    if not user.isdriver:
+        raise HTTPException(status_code=403, detail="Register as a driver to post rides")
     # get lat and lon from address using Google Geocoding API
-    print(f"Requesting ride with address {ride.address} and origin {ride.orgin}")
-    print(f"Requesting ride with date {ride.date}")
-    print(f"Requesting ride with driver id {ride.driverid}")
     geo = requests.get(
         "https://maps.googleapis.com/maps/api/geocode/json",
         params={"address": ride.address, "key": GOOGLE_API_KEY}
     ).json()
-    print(f"Geocoding status: {geo.get('status')}, error: {geo.get('error_message')}, results count: {len(geo.get('results', []))}")
     if not geo["results"]:
         raise HTTPException(status_code=400, detail="Address not found")
     location = geo["results"][0]["geometry"]["location"]
     lat, lon = location["lat"], location["lng"]
     new_ride = models.Rides(
         driverid=ride.driverid,
-        orgin =ride.orgin,
+        origin =ride.origin,
         address=ride.address,
         cost=ride.cost,
         description=ride.description,
         date=ride.date,
         lat=lat,
         lon=lon,
+        riders =[]
     )
     try:
         db.add(new_ride)
         db.commit()
         db.refresh(new_ride)
+        if hasattr(request.app.state, "scheduler"):
+            request.app.state.scheduler.add_job(expire_old_rides, "date", run_date=new_ride.date)
         return RideResponse.model_validate(new_ride)
     except Exception as e:
         db.rollback()
-        print(f"DB error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/add_user")
@@ -350,7 +368,7 @@ def add_user(user: UserInput, db: Session = Depends(get_db)):
         username=user.username,
         rcsid=user.rcsid,
         isdriver=user.isdriver,
-        rides = []
+        rides=user.rides or []
     )
     try:
         db.add(new_user)
@@ -379,47 +397,38 @@ def get_map():
     from fastapi.responses import Response
     return Response(content=resp.text, media_type="application/javascript")
 
-# Serve frontend static assets and additional pages (post.html, ride.html, etc.)
-app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
-
 # returns current and any upcoming rides
 @app.get("/upcoming_rides", response_model=RideListResponse)
-def get_upcoming_rides(db: Session = Depends(get_db)):
-    user_id = get_current_user(Request, db).rcsid
-    user = db.query(models.User).filter_by(rcsid=user_id).first()
-    
+def get_upcoming_rides(db: Session = Depends(get_db), user = Depends(get_current_user)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    rides = db.query(user.rides).filter(
+    rides = db.query(models.Rides).filter(
         models.Rides.date > datetime.datetime.now(datetime.timezone.utc),
         models.Rides.isactive == True).all()
     
-    if not rides:
-        raise HTTPException(status_code=404, detail="No upcoming rides found")
-    return RideListResponse(rides=rides)
+    return RideListResponse(rides=rides or [])
 
 # returns past rides that are no longer active
 @app.get("/previous_rides", response_model=RideListResponse)
-def get_previous_rides(db: Session = Depends(get_db)):
-    user_id = get_current_user(Request, db).rcsid
-    user = db.query(models.User).filter_by(rcsid=user_id).first()
+def get_previous_rides(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    user = db.query(models.User).filter_by(rcsid=current_user.rcsid).first()
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    rides = db.query(user.rides).filter(
-        models.Rides.date < datetime.datetime.now(datetime.timezone.utc), 
+    rides = db.query(models.Rides).filter(
+        models.Rides.date < datetime.datetime.now(datetime.timezone.utc),
         models.Rides.isactive == False).all()
-    
-    if not rides:
-        raise HTTPException(status_code=404, detail="No previous rides found")
-    return RideListResponse(rides=rides)
+
+    return RideListResponse(rides=rides or [])
 
 
 @app.post("/complete_ride/{ride_id}")
-def complete_ride(ride_id: int, db: Session = Depends(get_db)):
+def complete_ride(ride_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     ride = db.query(models.Rides).filter_by(id=ride_id).first()
     if not ride:
         raise HTTPException(status_code=404, detail="Ride not found")
+    if ride.driverid != current_user.rcsid:
+        raise HTTPException(status_code=403, detail="Only the driver can complete this ride")
     ride.isactive = False
     try:
         db.commit()
@@ -430,10 +439,12 @@ def complete_ride(ride_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/cancel_ride/{ride_id}")
-def cancel_ride(ride_id: int, db: Session = Depends(get_db)):
+def cancel_ride(ride_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     ride = db.query(models.Rides).filter_by(id=ride_id).first()
     if not ride:
         raise HTTPException(status_code=404, detail="Ride not found")
+    if ride.driverid != current_user.rcsid:
+        raise HTTPException(status_code=403, detail="Only the driver can cancel this ride")
     db.delete(ride)
     try:
         db.commit()
@@ -522,3 +533,11 @@ def update_payment(payment_req: PaymentRequest, current_user: User = Depends(get
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         session.close()
+
+@app.get("/debug/jobs")
+def debug_jobs(request: Request):
+    jobs = request.app.state.scheduler.get_jobs()
+    return [{"id": j.id, "next_run": str(j.next_run_time), "func": str(j.func_ref)} for j in jobs]
+
+# Serve frontend static assets and additional pages (post.html, ride.html, etc.)
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
