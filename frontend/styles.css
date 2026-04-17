@@ -1,7 +1,3 @@
-h1 { /* margin: (top)px (right)px (bottom)px (left)px; or margin: (top/bottom)px (left/right)px*/
-  margin: 10px 100px;
-}
-
 :root {
   --primary: rgb(203, 21, 21);
   --secondary: #0f172a;
@@ -209,7 +205,6 @@ section {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 2rem;
-  background: blue;
 }
 
 .feature-card {
@@ -231,61 +226,70 @@ section {
 
 /* My Trips page */
 .trips-heading {
-  margin: 1.5rem 0 1rem;
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 2rem 0 1.25rem;
+  color: var(--secondary);
 }
 
 .tab-bar {
   display: flex;
   gap: 0;
   margin-bottom: 0;
+  border-bottom: 2px solid #e0e0e0;
 }
 
 .tab {
-  padding: 8px 20px;
-  border: 2px solid #e0e0e0;
-  border-bottom: none;
-  border-radius: 8px 8px 0 0;
-  background: #f0f0f0;
+  padding: 0.6rem 1.25rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  border-radius: 0;
+  background: none;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--muted);
+  transition: color 0.15s ease;
+}
+
+.tab:hover {
+  color: var(--secondary);
 }
 
 .tab.active {
-  background: var(--primary);
-  color: white;
-  font-weight: bold;
-  border: 2px solid rgb(170, 0, 0);
-  border-bottom: none;
-  margin-bottom: -2px;
-  position: relative;
-  z-index: 1;
+  color: var(--primary);
+  border-bottom: 2px solid var(--primary);
+  font-weight: 600;
+  background: none;
 }
 
 #trip-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  border: 2px solid rgb(170, 0, 0);
-  border-radius: 0 8px 8px 8px;
-  padding: 16px;
-  background-color: #fef2f2;
+  padding: 1.25rem 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
 }
 
 .trip-card {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 16px;
+  padding: 1rem 1.25rem;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   text-decoration: none;
   color: inherit;
   background-color: white;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .trip-card:hover {
   border-color: var(--primary);
-  background-color: #fff8f8;
+  box-shadow: 0 2px 8px rgba(203, 21, 21, 0.08);
 }
 
 .trip-card-top {
@@ -295,9 +299,9 @@ section {
 }
 
 .trip-destination {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  color: var(--text);
+  color: var(--secondary);
 }
 
 .trip-card-meta {
@@ -312,42 +316,13 @@ section {
   justify-content: space-between;
   font-size: 13px;
   color: var(--muted);
-  padding-top: 6px;
+  padding-top: 8px;
   border-top: 1px solid #f1f5f9;
 }
 
 .trip-cost {
   font-weight: 600;
-  color: var(--text);
-}
-
-/* Tabs on My Trips page */
-.tab-bar {
-  display: flex;
-  gap: 0;
-  margin-bottom: 0px;
-  margin-left: 100px;
-}
-
-.tab {
-  padding: 8px 20px;
-  border: 2px solid #e0e0e0;
-  border-bottom: none;
-  border-radius: 8px 8px 0 0;
-  background: #f0f0f0;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.tab.active {
-  background: red;
-  color: black;
-  font-weight: bold;
-  border: 2px solid rgb(170, 0, 0);
-  border-bottom: none;
-  margin-bottom: -2px;
-  position: relative;
-  z-index: 1;
+  color: var(--secondary);
 }
 
 /* Footer */
@@ -552,4 +527,120 @@ footer p {
 .status-completed { /*ride was completed*/
   background: #f1f5f9;
   color: #475569;
+}
+
+/* Driver trip card (trips.html) */
+.trip-card-driver {
+  border-left: 3px solid var(--primary);
+}
+
+.driver-badge {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  background: #fce8e8;
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+
+.trip-card-passengers {
+  font-size: 13px;
+  color: var(--muted);
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.passengers-label {
+  font-weight: 600;
+  color: var(--secondary);
+  flex-shrink: 0;
+}
+
+.passengers-names {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trips-empty {
+  color: var(--muted);
+  font-size: 0.95rem;
+  padding: 1rem 0;
+}
+
+/* ── Driver detail view (trips_details.html) ── */
+.passenger-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 0.5rem;
+}
+
+.passenger-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.passenger-row:last-child {
+  border-bottom: none;
+}
+
+.passenger-avatar {
+  flex-shrink: 0;
+}
+
+.passenger-info {
+  flex: 1;
+}
+
+.passenger-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--secondary);
+}
+
+.passenger-id {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+.passenger-badges {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Generic badge */
+.badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+
+/* Join status badges */
+.badge-join-confirmed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-join-pending {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+/* Payment status badges */
+.badge-pay-paid {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.badge-pay-unpaid {
+  background: #fce8e8;
+  color: rgb(160, 15, 15);
 }
