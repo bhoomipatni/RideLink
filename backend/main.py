@@ -141,24 +141,23 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
 # In-memory SSE connections: rcsid -> list of queues
 _sse_connections: dict[str, list[asyncio.Queue]] = defaultdict(list)
 
-async def push_notification(db: Session, rcsid: str, title: str, body: str):
+async def push_notification(rcsid: str, rideid: int, title: str, body: str, db: Session):
     """Save to DB and push to any live SSE connections for this user."""
-    notif = models.Notification(user_rcsid=rcsid, title=title, body=body)
+    notif = models.Notification(rcsid=rcsid, rideid=rideid, title=title, body=body)
     db.add(notif)
     db.commit()
     db.refresh(notif)
 
     message = {
-        "id": notif.id,
         "title": notif.title,
         "body": notif.body,
         "read": notif.read,
-        "created_at": notif.created_at.isoformat(),
+        "created_at": notif.created_at.isoformat()
     }
     for queue in _sse_connections.get(rcsid, []):
         await queue.put(message)
 
-
+# stream endpoint
 @app.get("/notifications/stream")
 async def notification_stream(current_user: User = Depends(get_current_user)):
     queue: asyncio.Queue = asyncio.Queue()
@@ -182,15 +181,26 @@ async def notification_stream(current_user: User = Depends(get_current_user)):
 
 ########## end SSE notification code, rest is normal endpoints ##########
 
+@app.get("/notifications")
+def get_notifications(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return db.query(models.Notification)\
+        .filter_by(rcsid=current_user.rcsid)\
+        .order_by(models.Notification.created_at.desc())\
+        .limit(50).all()
+
+@app.patch("/notifications/{notif_id}/read")
+def mark_read(notif_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    notif = db.query(models.Notification).filter_by(id=notif_id, rcsid=current_user.rcsid).first()
+    if not notif:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    notif.read = True
+    db.commit()
+    return {"ok": True}
+
 @app.get("/")
 async def read_root():
     index_path = os.path.join(FRONTEND_DIR, "index.html")
     return FileResponse(index_path)
-
-
-# @app.get("/")
-# async def basic():
-#     return {"msg": "Hello World"}
 
 @app.get("/login")
 async def login(request: Request):
@@ -453,7 +463,7 @@ def get_previous_rides(db: Session = Depends(get_db)):
 
 
 @app.post("/complete_ride/{ride_id}")
-def complete_ride(ride_id: int, db: Session = Depends(get_db)):
+async def complete_ride(ride_id: int, db: Session = Depends(get_db)):
     ride = db.query(models.Rides).filter_by(id=ride_id).first()
     if not ride:
         raise HTTPException(status_code=404, detail="Ride not found")
@@ -461,6 +471,8 @@ def complete_ride(ride_id: int, db: Session = Depends(get_db)):
     try:
         db.commit()
         db.refresh(ride)
+        for rider in ride.riders:
+            await push_notification(db, rider.rcsid, "Ride completed", f"Your ride to {ride.address} has been completed.")
         return RideResponse.model_validate(ride)
     except Exception as e:
         db.rollback()

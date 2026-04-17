@@ -46,10 +46,11 @@ class Rides(Base):
     lon = Column("long", Float, nullable=False)
 
 class Notification(Base):
-    __tablename__ = "notifications"
+    __tablename__ = "Notifications"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_rcsid = Column(String, ForeignKey("users.rcsid"), nullable=False, index=True)
+    rcsid = Column(String, ForeignKey("Users.rcsid"), nullable=False, index=True)
+    rideid = Column(Integer, ForeignKey("Rides.id"), nullable=False, index=True)
     title = Column(String, nullable=False)
     body = Column(String)
     read = Column(Boolean, default=False)
