@@ -277,7 +277,7 @@ section {
 .trip-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   padding: 1rem 1.25rem;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
@@ -304,11 +304,72 @@ section {
   color: var(--secondary);
 }
 
+.trip-card-route {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.route-origin {
+  color: var(--muted);
+}
+
+.route-arrow {
+  color: var(--primary);
+  font-size: 12px;
+}
+
+.route-dest {
+  color: var(--secondary);
+  font-weight: 500;
+}
+
 .trip-card-meta {
   display: flex;
-  gap: 12px;
+  align-items: center;
+  gap: 5px;
   font-size: 13px;
   color: var(--muted);
+}
+
+.meta-icon {
+  font-size: 12px;
+}
+
+.meta-sep {
+  color: #cbd5e1;
+}
+
+.trip-card-passengers {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.passengers-label {
+  font-weight: 600;
+  color: var(--secondary);
+  flex-shrink: 0;
+}
+
+.passengers-names {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.seats-chip {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: #f1f5f9;
+  color: var(--secondary);
 }
 
 .trip-card-bottom {
@@ -318,11 +379,18 @@ section {
   color: var(--muted);
   padding-top: 8px;
   border-top: 1px solid #f1f5f9;
+  margin-top: 2px;
 }
 
 .trip-cost {
   font-weight: 600;
   color: var(--secondary);
+}
+
+.trips-empty {
+  color: var(--muted);
+  font-size: 0.95rem;
+  padding: 1rem 0;
 }
 
 /* Footer */
@@ -407,6 +475,12 @@ footer p {
   margin-top: 8px;
   font-size: 14px;
   opacity: 0.9;
+}
+
+.header-route {
+  margin-top: 6px;
+  font-size: 13px;
+  opacity: 0.85;
 }
 
 .detail-body {
@@ -506,7 +580,6 @@ footer p {
   font-weight: 500;
 }
 
-/* Status for individual trip */
 .status-pill {
   font-size: 12px;
   padding: 3px 10px;
@@ -514,22 +587,22 @@ footer p {
   font-weight: 600;
 }
 
-.status-confirmed { /*you joined ride successfully and driver confirmed it's still on*/
+.status-confirmed {
   background: #dcfce7;
   color: #166534;
 }
 
-.status-cancelled { /*driver cancelled ride*/
+.status-cancelled {
   background: #fce8e8;
   color: rgb(160, 15, 15);
 }
 
-.status-completed { /*ride was completed*/
+.status-completed {
   background: #f1f5f9;
   color: #475569;
 }
 
-/* Driver trip card (trips.html) */
+/* ── Driver trip card accent ── */
 .trip-card-driver {
   border-left: 3px solid var(--primary);
 }
@@ -543,37 +616,10 @@ footer p {
   border-radius: 99px;
 }
 
-.trip-card-passengers {
-  font-size: 13px;
-  color: var(--muted);
-  display: flex;
-  gap: 6px;
-  align-items: baseline;
-}
-
-.passengers-label {
-  font-weight: 600;
-  color: var(--secondary);
-  flex-shrink: 0;
-}
-
-.passengers-names {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.trips-empty {
-  color: var(--muted);
-  font-size: 0.95rem;
-  padding: 1rem 0;
-}
-
-/* ── Driver detail view (trips_details.html) ── */
+/* ── Driver detail: passenger list ── */
 .passenger-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
   margin-bottom: 0.5rem;
 }
 
@@ -615,7 +661,6 @@ footer p {
   flex-shrink: 0;
 }
 
-/* Generic badge */
 .badge {
   font-size: 11px;
   font-weight: 600;
@@ -623,24 +668,114 @@ footer p {
   border-radius: 99px;
 }
 
-/* Join status badges */
-.badge-join-confirmed {
-  background: #dcfce7;
-  color: #166534;
+.badge-join-confirmed { background: #dcfce7; color: #166534; }
+.badge-join-pending   { background: #fef9c3; color: #854d0e; }
+.badge-pay-paid       { background: #e0f2fe; color: #075985; }
+.badge-pay-unpaid     { background: #fce8e8; color: rgb(160, 15, 15); }
+
+/* ── Driver edit panel ── */
+.edit-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.badge-join-pending {
-  background: #fef9c3;
-  color: #854d0e;
+.edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-/* Payment status badges */
-.badge-pay-paid {
-  background: #e0f2fe;
-  color: #075985;
+.edit-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
 }
 
-.badge-pay-unpaid {
-  background: #fce8e8;
+.edit-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.edit-input:focus {
+  border-color: var(--primary);
+  background: white;
+}
+
+select.edit-input {
+  cursor: pointer;
+}
+
+.edit-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.edit-actions-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.edit-save-btn {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary);
+  color: white;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.edit-save-btn:hover {
+  opacity: 0.88;
+}
+
+.edit-cancel-btn {
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
   color: rgb(160, 15, 15);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.edit-cancel-btn:hover {
+  border-color: rgb(160, 15, 15);
+  background: #fce8e8;
+}
+
+.edit-status-msg {
+  font-size: 13px;
+  min-height: 1.2em;
+  text-align: center;
+}
+
+.edit-status-success { color: #166534; }
+.edit-status-error   { color: rgb(160, 15, 15); }
+
+.edit-cancelled-note {
+  font-size: 14px;
+  color: rgb(160, 15, 15);
+  padding: 0.75rem 0;
+  text-align: center;
 }
