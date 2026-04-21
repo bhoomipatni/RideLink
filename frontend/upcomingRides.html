@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RideLink — Campus Ridesharing</title>
+  <title>RideLink — Upcoming Rides</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 
@@ -22,21 +22,13 @@
           <a href="post.html">Post a trip</a>
           <a href="ride.html">Find a Ride</a>
           <a href="upcomingRides.html">Upcoming Rides</a>
-          <a href="#My Trips">My Trips</a>
           <a href="info.html">How It Works</a>
-          <a href="#account">My Account</a>
-          <div class="dropdown">
-            <a class="dropdown-toggle">My Account ▾</a>
-            <div class="dropdown-menu">
-              <a href="/login">Log In</a>
-            </div>
-          </div>
           <a href="contactUs.html">Contact Us</a>
 
           <div class="dropdown">
             <a class="dropdown-toggle">My Account ▾</a>
             <div class="dropdown-menu">
-              <a href="#signup">Sign Up</a>
+              <a href="/login">Log In</a>
               <a href="settings.html">Settings</a>
             </div>
           </div>
@@ -44,16 +36,9 @@
       </nav>
     </div>
   </header>
-  <!-- AI GEN BELOW REMOVE IN PROD ⚠️⚠️⚠️ -->
-  <div id="map" style="width:100%;height:400px;"></div>
 
   <section class="ride-search-section">
-    <h1>Find a Ride(AI GEN PLACAEHOLDER)</h1>
-    <div class="search-form">
-      <input type="text" id="address" placeholder="Destination address" />
-      <input type="datetime-local" id="date" />
-      <button id="searchButton">Search</button>
-    </div>
+    <h1>Upcoming Rides</h1>
     <div id="results"></div>
   </section>
 
@@ -64,33 +49,11 @@
       padding: 0 1rem;
     }
     .ride-search-section h1 {
-      margin-bottom: 1rem;
+      margin-bottom: 0.25rem;
     }
-    .search-form {
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
+    .subtitle {
+      color: var(--muted);
       margin-bottom: 1.5rem;
-    }
-    .search-form input {
-      flex: 1;
-      min-width: 180px;
-      padding: 0.6rem 0.8rem;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      font-size: 0.95rem;
-    }
-    .search-form button {
-      padding: 0.6rem 1.4rem;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 0.95rem;
-      cursor: pointer;
-    }
-    .search-form button:hover {
-      opacity: 0.9;
     }
     .ride-card {
       background: white;
@@ -124,8 +87,8 @@
     }
   </style>
 
-  <script src="ride.js"></script>
-  <!-- AI GEN ABOVE REMOVE IN PROD⚠️⚠️⚠️  -->
+  <script src="upcomingRides.js"></script>
+
   <footer id="contact">
     <p>© 2026 RideLink. Built for students.</p>
   </footer>

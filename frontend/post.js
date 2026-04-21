@@ -11,7 +11,7 @@ submit.addEventListener("click", async () => {
             },
 
             body: JSON.stringify({
-                driverid: "1", // TODO: replace with real user id after login is done
+                driverid: "oyong", // TODO: replace with real rcsid after login is done
                 address: document.getElementById("end").value,
                 origin: document.getElementById("start").value,
                 date: new Date(document.getElementById("date").value + "T" + (document.getElementById("time").value || "00:00") + ":00").toISOString(),

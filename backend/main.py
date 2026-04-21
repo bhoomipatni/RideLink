@@ -155,22 +155,26 @@ async def callback(request: Request):
     return response
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
-    # ⚠️ TEMPORARY OVERRIDE WITH HARDCODE FOR RN ⚠️
+    # TEMPORARY OVERRIDE WITH HARDCODE — login is bugged, remove when fixed
     user = db.query(models.User).filter_by(rcsid="oyong").first()
     if not user:
         raise HTTPException(status_code=404, detail="Hardcoded dev user 'oyong' not found in DB")
     return user
     token = request.cookies.get("session")
+    print(f"[get_current_user] session cookie present: {bool(token)}")
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     try:
         payload = jwt.decode(token, os.getenv("SAML_PRIVATE_KEY"), algorithms=["HS256"])
         rcsid = str(payload["rcsid"])
-    except jwt.PyJWTError:
+        print(f"[get_current_user] decoded rcsid: {rcsid!r}")
+    except jwt.PyJWTError as e:
+        print(f"[get_current_user] JWT decode failed: {e}")
         raise HTTPException(status_code=401, detail="Invalid token")
     if not rcsid:
         raise HTTPException(status_code=401, detail="Not authenticated")
     user = db.query(models.User).filter_by(rcsid=rcsid).first()
+    print(f"[get_current_user] user lookup result: {user}")
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
@@ -218,6 +222,7 @@ ROUTING_PREF = "TRAFFIC_AWARE" if _params["TRAFFIC_AWARE"] else "TRAFFIC_UNAWARE
 # end point example GET /search_rides/123%20Main%20St/2024-06-01T12:00:00Z  where its a str address and an iso date
 @app.get("/search_rides/{address}/{date}", response_model=list[RideWithETA])
 def search_rides(address: str, date: str, db: Session = Depends(get_db)):
+    print(f"[search_rides] raw date param: {date!r}")
     # makie a bounding box around the address using lat and lon are threshold in the const above
     # get lat/lon from address using Google Geocoding API
     geo = requests.get(
@@ -234,16 +239,30 @@ def search_rides(address: str, date: str, db: Session = Depends(get_db)):
     max_lat = lat + DISTANCE_LIMIT
     min_lon = lon - DISTANCE_LIMIT
     max_lon = lon + DISTANCE_LIMIT
+    print(f"[search_rides] geocoded address={address!r} -> lat={lat}, lon={lon}")
+    print(f"[search_rides] bounding box: lat=[{min_lat}, {max_lat}], lon=[{min_lon}, {max_lon}]")
+    parsed_date = datetime.datetime.fromisoformat(date)
+    date_min = parsed_date - datetime.timedelta(hours=24)
+    date_max = parsed_date + datetime.timedelta(hours=24)
+    print(f"[search_rides] parsed date: {parsed_date!r} (tzinfo={parsed_date.tzinfo})")
+    print(f"[search_rides] date window: {date_min} to {date_max}")
     # then query the database for rides within the bounding box and are within 24 hours of the request date both ways
+    # first check all active rides to see what's in the DB
+    all_active = db.query(models.Rides).filter(models.Rides.isactive == True).all()
+    all_inactive = db.query(models.Rides).filter(models.Rides.isactive == False).all()
+    print(f"[search_rides] total active rides in DB: {len(all_active)}, inactive: {len(all_inactive)}")
+    for r in all_active + all_inactive:
+        print(f"  ride id={r.id} isactive={r.isactive} lat={r.lat} lon={r.lon} date={r.date!r} (tzinfo={getattr(r.date, 'tzinfo', 'N/A')})")
     rides = db.query(models.Rides).filter(
         models.Rides.lat >= min_lat,
         models.Rides.lat <= max_lat,
         models.Rides.lon >= min_lon,
         models.Rides.lon <= max_lon,
         models.Rides.isactive == True,
-        models.Rides.date >= datetime.datetime.fromisoformat(date) - datetime.timedelta(hours=24),
-        models.Rides.date <= datetime.datetime.fromisoformat(date) + datetime.timedelta(hours=24),
+        models.Rides.date >= date_min,
+        models.Rides.date <= date_max,
     ).all()
+    print(f"[search_rides] rides after all filters: {len(rides)}")
     # sort rides by distance to address in degrees so we can get the top to send to the API
     rides.sort(key=lambda r: (r.lat - lat)**2 + (r.lon - lon)**2)
     rides = rides[:GET_ETA_COUNT]
@@ -396,6 +415,12 @@ def get_previous_rides(db: Session = Depends(get_db), current_user = Depends(get
 
     return RideListResponse(rides=rides or [])
 
+@app.get("/five_upcoming_rides", response_model=RideListResponse)
+def five_upcoming_rides(db: Session = Depends(get_db)):
+    rides = db.query(models.Rides).filter(
+        models.Rides.date > datetime.datetime.now(datetime.timezone.utc),
+        models.Rides.isactive == True).order_by(models.Rides.date.asc()).limit(5).all()
+    return RideListResponse(rides=rides or [])
 
 @app.post("/complete_ride/{ride_id}")
 def complete_ride(ride_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
