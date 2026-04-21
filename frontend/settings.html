@@ -24,10 +24,76 @@
         Payment Methods
       </button>
     </div>
-
+    <!--account tab-->
     <section class="tab-panel" id="accountTab" role="tabpanel" hidden>
       <h2>Account</h2>
       <p class="muted">Manage profile and account preferences from this tab.</p>
+      
+      <h3>Personal Information</h3>
+      <div class="field-group">
+        <!-- Name -->
+        <div class="field-row" id="row-name">
+          <div class="field-meta">
+            <div class="field-name">Full name</div>
+            <div class="field-value" id="display-name">Jane Doe</div>
+          </div>
+          <button class="edit-btn" type="button" onclick="startEdit('name')">Edit</button>
+          <div class="field-edit-form" id="edit-name">
+            <input type="text" id="input-name" placeholder="Full name" value="Jane Doe" />
+            <div class="edit-actions">
+              <button class="primary" type="button" onclick="saveField('name')">Save</button>
+              <button type="button" onclick="cancelEdit('name')">Cancel</button>
+            </div>
+          </div>
+        </div>
+ 
+        <!-- Email -->
+        <div class="field-row" id="row-email">
+          <div class="field-meta">
+            <div class="field-name">Email</div>
+            <div class="field-value" id="display-email">
+              jane@example.com
+              <span class="field-badge badge-verified">Verified</span>
+            </div>
+          </div>
+          <button class="edit-btn" type="button" onclick="startEdit('email')">Edit</button>
+          <div class="field-edit-form" id="edit-email">
+            <input type="email" id="input-email" placeholder="email@example.com" value="jane@example.com" />
+            <div class="edit-actions">
+              <button class="primary" type="button" onclick="saveField('email')">Save</button>
+              <button type="button" onclick="cancelEdit('email')">Cancel</button>
+            </div>
+          </div>
+        </div>
+ 
+        <!-- Phone -->
+        <div class="field-row" id="row-phone">
+          <div class="field-meta">
+            <div class="field-name">Phone number</div>
+            <div class="field-value" id="display-phone">
+              +1 (555) 000-1234
+              <span class="field-badge badge-verified">Verified</span>
+            </div>
+          </div>
+          <button class="edit-btn" type="button" onclick="startEdit('phone')">Edit</button>
+          <div class="field-edit-form" id="edit-phone">
+            <input type="tel" id="input-phone" placeholder="+1 (555) 000-0000" value="+1 (555) 000-1234" />
+            <div class="edit-actions">
+              <button class="primary" type="button" onclick="saveField('phone')">Save</button>
+              <button type="button" onclick="cancelEdit('phone')">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+ 
+      <hr />
+ 
+      <div class="danger-zone">
+        <h3>Danger Zone</h3>
+        <p>Permanently delete your account and all associated data. This cannot be undone.</p>
+        <button class="danger" type="button" onclick="confirmDelete()">Delete account</button>
+      </div>
+
     </section>
 
     <section class="tab-panel" id="paymentTab" role="tabpanel">
@@ -82,22 +148,51 @@
     const tabPanels = document.querySelectorAll(".tab-panel");
 
     function showTab(panelId) {
-      tabPanels.forEach((panel) => {
-        panel.hidden = panel.id !== panelId;
-      });
-
-      tabButtons.forEach((button) => {
+      tabPanels.forEach(panel => { panel.hidden = panel.id !== panelId; });
+      tabButtons.forEach(button => {
         const isActive = button.dataset.tab === panelId;
         button.classList.toggle("active", isActive);
         button.setAttribute("aria-selected", String(isActive));
       });
     }
-
-    tabButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        showTab(button.dataset.tab);
-      });
+ 
+    tabButtons.forEach(button => {
+      button.addEventListener("click", () => showTab(button.dataset.tab));
     });
+ 
+    // Inline field editing
+    function startEdit(field) {
+      document.getElementById(`edit-${field}`).classList.add("open");
+      document.getElementById(`row-${field}`).classList.add("editing");
+      document.querySelector(`#row-${field} .edit-btn`).style.display = "none";
+      document.getElementById(`input-${field}`).focus();
+    }
+ 
+    function cancelEdit(field) {
+      document.getElementById(`edit-${field}`).classList.remove("open");
+      document.getElementById(`row-${field}`).classList.remove("editing");
+      document.querySelector(`#row-${field} .edit-btn`).style.display = "";
+    }
+ 
+    function saveField(field) {
+      const input = document.getElementById(`input-${field}`);
+      const val = input.value.trim();
+      if (!val) return;
+ 
+      const display = document.getElementById(`display-${field}`);
+      // Preserve any badges already in the display span
+      const badge = display.querySelector(".field-badge");
+      display.textContent = val;
+      if (badge) display.appendChild(badge);
+ 
+      cancelEdit(field);
+    }
+ 
+    function confirmDelete() {
+      if (confirm("Are you sure you want to delete your account? This cannot be undone.")) {
+        alert("Account deletion requested. You will receive a confirmation email.");
+      }
+    }
   </script>
   <script src="payment.js"></script>
 </body>

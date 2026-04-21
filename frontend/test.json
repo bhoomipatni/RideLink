@@ -1,0 +1,55 @@
+[
+    {
+        "id": 1,
+        "destination": "Airport",
+        "day": "Monday",
+        "date": "March 15, 2026",
+        "time": "6:42 AM",
+        "driver": "Marty",
+        "distance": 14.2,
+        "cost": 24.50,
+        "payment_method": "Venmo",
+        "num_riders": 2,
+        "status": "confirmed"
+
+    },
+    {
+        "id": 2,
+        "destination": "Downtown",
+        "day": "Tuesday",
+        "date": "October 10, 2026",
+        "time": "7:15 PM",
+        "driver": "Schmidt",
+        "distance": 32.8,
+        "cost": 48.20,
+        "payment_method": "PayPal",
+        "num_riders": 1,
+        "status": "confirmed"
+    },
+    {
+        "id": 3,
+        "destination": "RPI",
+        "day": "Friday",
+        "date": "February 20, 1999",
+        "time": "3:01 AM",
+        "driver": "Puckman",
+        "distance": 100,
+        "cost": 80.324,
+        "payment_method": "Other",
+        "num_riders": 4,
+        "status": "completed"
+    },
+    {
+        "id": 4,
+        "destination": "Upcoming date example",
+        "day": "Monday",
+        "date": "February 20, 3030",
+        "time": "3:01 AM",
+        "driver": "person4",
+        "distance": 200,
+        "cost": 29.99,
+        "payment_method": "Cash",
+        "num_riders": 3,
+        "status": "cancelled"
+    }
+]
