@@ -34,6 +34,23 @@ function initMap() {
     });
 }
 
+function calculateFare() { 
+    let distance = parseFloat(document.getElementById("distance").value); 
+    let baseFare = parseFloat(document.getElementById("baseFare").value); 
+    let perMile = parseFloat(document.getElementById("perMile").value); 
+    let surge = parseFloat(document.getElementById("surge").value); 
+    if (isNaN(distance) || isNaN(baseFare) || isNaN(perMile) || isNaN(surge)) { 
+        showPopup("Please enter valid numbers."); 
+        return; 
+    } 
+    let fare = (baseFare + (distance * perMile)) * surge; 
+    showPopup("Estimated Fare: $" + fare.toFixed(2)); } 
+function showPopup(message) { 
+    document.getElementById("popupText").innerText = message; 
+    document.getElementById("popup").style.display = "block"; } 
+function closePopup() { 
+    document.getElementById("popup").style.display = "none"; }
+
 window.initMap = initMap;
 
 let script = document.createElement("script");
