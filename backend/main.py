@@ -222,7 +222,6 @@ ROUTING_PREF = "TRAFFIC_AWARE" if _params["TRAFFIC_AWARE"] else "TRAFFIC_UNAWARE
 # end point example GET /search_rides/123%20Main%20St/2024-06-01T12:00:00Z  where its a str address and an iso date
 @app.get("/search_rides/{address}/{date}", response_model=list[RideWithETA])
 def search_rides(address: str, date: str, db: Session = Depends(get_db)):
-    print(f"[search_rides] raw date param: {date!r}")
     # makie a bounding box around the address using lat and lon are threshold in the const above
     # get lat/lon from address using Google Geocoding API
     geo = requests.get(
@@ -239,20 +238,10 @@ def search_rides(address: str, date: str, db: Session = Depends(get_db)):
     max_lat = lat + DISTANCE_LIMIT
     min_lon = lon - DISTANCE_LIMIT
     max_lon = lon + DISTANCE_LIMIT
-    print(f"[search_rides] geocoded address={address!r} -> lat={lat}, lon={lon}")
-    print(f"[search_rides] bounding box: lat=[{min_lat}, {max_lat}], lon=[{min_lon}, {max_lon}]")
     parsed_date = datetime.datetime.fromisoformat(date)
     date_min = parsed_date - datetime.timedelta(hours=24)
     date_max = parsed_date + datetime.timedelta(hours=24)
-    print(f"[search_rides] parsed date: {parsed_date!r} (tzinfo={parsed_date.tzinfo})")
-    print(f"[search_rides] date window: {date_min} to {date_max}")
     # then query the database for rides within the bounding box and are within 24 hours of the request date both ways
-    # first check all active rides to see what's in the DB
-    all_active = db.query(models.Rides).filter(models.Rides.isactive == True).all()
-    all_inactive = db.query(models.Rides).filter(models.Rides.isactive == False).all()
-    print(f"[search_rides] total active rides in DB: {len(all_active)}, inactive: {len(all_inactive)}")
-    for r in all_active + all_inactive:
-        print(f"  ride id={r.id} isactive={r.isactive} lat={r.lat} lon={r.lon} date={r.date!r} (tzinfo={getattr(r.date, 'tzinfo', 'N/A')})")
     rides = db.query(models.Rides).filter(
         models.Rides.lat >= min_lat,
         models.Rides.lat <= max_lat,
@@ -262,7 +251,6 @@ def search_rides(address: str, date: str, db: Session = Depends(get_db)):
         models.Rides.date >= date_min,
         models.Rides.date <= date_max,
     ).all()
-    print(f"[search_rides] rides after all filters: {len(rides)}")
     # sort rides by distance to address in degrees so we can get the top to send to the API
     rides.sort(key=lambda r: (r.lat - lat)**2 + (r.lon - lon)**2)
     rides = rides[:GET_ETA_COUNT]
