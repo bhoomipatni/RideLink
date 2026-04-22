@@ -1,4 +1,6 @@
 from contextlib import asynccontextmanager
+import attrs
+from attr import attrs
 from fastapi import FastAPI, HTTPException, Depends, Request
 from pydantic import BaseModel, ConfigDict
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
@@ -18,6 +20,9 @@ from onelogin.saml2.metadata import OneLogin_Saml2_Metadata
 import jwt
 from apscheduler.schedulers.background import BackgroundScheduler
 from backend.check_rides import expire_old_rides
+from backend.core.security import JWT_SECRET, create_token
+from backend.core.security import decode_token
+import traceback
 
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
@@ -70,12 +75,19 @@ def validate_sp_metadata(metadata_xml: str):
 
 
 async def prepare_saml_request(request: Request):
+    form_data = {}
+    try:
+        if request.method == "POST":
+            form_data = dict(await request.form())
+    except Exception:
+        form_data = {}
+
     return {
         "http_host": request.url.hostname,
-        "script_name": str(request.url.path),
-        "server_port": request.url.port or 80,
+        "script_name": request.url.path,
+        "server_port": request.url.port or 443,
         "get_data": dict(request.query_params),
-        "post_data": dict(await request.form()) if request.method == "POST" else {},
+        "post_data": form_data,
         "https": "on" if request.url.scheme == "https" else "off",
     }
 
@@ -140,41 +152,113 @@ async def login(request: Request):
     req = await prepare_saml_request(request)
     auth = init_saml_auth(req)
     return RedirectResponse(url=auth.login())
-
-
 @app.post("/callback")
-async def callback(request: Request):
-    req = await prepare_saml_request(request)
-    auth = init_saml_auth(req)
-    auth.process_response()
+async def callback(request: Request, db: Session = Depends(get_db)):
+    try:
+        # --- Parse SAML request ---
+        req = await prepare_saml_request(request)
+        auth = init_saml_auth(req)
 
-    rcsid = auth.get_nameid()
-    token = jwt.encode({"rcsid": rcsid}, os.getenv("SAML_PRIVATE_KEY"), algorithm="HS256")
-    response = RedirectResponse(url="/", status_code=302)
-    response.set_cookie("session", token)
-    return response
+        auth.process_response()
+
+        errors = auth.get_errors()
+        if errors:
+            raise HTTPException(status_code=400, detail={"saml_errors": errors})
+
+        # --- Extract user identity ---
+        attributes = auth.get_attributes()
+
+        rcsid = (
+        attributes.get("urn:oid:0.9.2342.19200300.100.1.1", [None])[0]  # uid
+        or attributes.get("urn:oid:0.9.2342.19200300.100.1.3", [None])[0]  # email
+        or attributes.get("eduPersonPrincipalName", [None])[0]
+        )
+        if rcsid and "@" in rcsid:
+            rcsid = rcsid.split("@")[0]
+        print(f"[CALLBACK] rcsid={rcsid}, attributes={attributes}")
+        if len(rcsid) > 50:
+            raise HTTPException(status_code=400, detail="Invalid SAML identifier")
+
+        # --- Fetch or create user ---
+        # --- Fetch or create user ---
+        user = db.query(models.User).filter_by(rcsid=rcsid).first()
+
+        if user is None:
+            attributes = auth.get_attributes()
+
+            username = (
+                attributes.get("uid", [None])[0]
+                or attributes.get("cn", [None])[0]
+                or attributes.get("givenName", [None])[0]
+                or "user"
+            )
+
+            user = models.User(
+                username=username[:100],
+                rcsid=rcsid[:50],
+                isdriver=False,
+                rides=[]
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+            print(f"[CALLBACK] Created new user: {rcsid}")
+
+        # --- Create session token ---
+        token = create_token(rcsid)
+        print("JWT_SECRET:", JWT_SECRET, type(JWT_SECRET))
+
+        response = RedirectResponse(url="/", status_code=302)
+        response.set_cookie(
+            key="session",
+            value=token,
+            httponly=True,
+            secure=True,   # set False in local dev if needed
+            samesite="lax",
+            max_age=60 * 60 * 12
+        )
+
+        return response
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        print(f"[CALLBACK] Unexpected error: {type(e).__name__}: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Internal server error")
+
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
-    # ⚠️ TEMPORARY OVERRIDE WITH HARDCODE FOR RN ⚠️
-    user = db.query(models.User).filter_by(rcsid="oyong").first()
-    if not user:
-        raise HTTPException(status_code=404, detail="Hardcoded dev user 'oyong' not found in DB")
-    return user
     token = request.cookies.get("session")
+
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
+
     try:
-        payload = jwt.decode(token, os.getenv("SAML_PRIVATE_KEY"), algorithms=["HS256"])
-        rcsid = str(payload["rcsid"])
+        payload = decode_token(token)
+        rcsid = payload.get("rcsid")
+        if not rcsid:
+            raise HTTPException(status_code=401, detail="Invalid token payload")
+
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
-    if not rcsid:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+
     user = db.query(models.User).filter_by(rcsid=rcsid).first()
+
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
     return user
 
+@app.get("/api/me")
+def get_me(current_user: User = Depends(get_current_user)):
+    return {
+        "rcsid": current_user.rcsid,
+        "username": current_user.username,
+        "isdriver": current_user.isdriver,
+    }
 @app.get("/metadata", response_class=HTMLResponse)
 def metadata():
     metadata_xml = OneLogin_Saml2_Metadata.builder(saml_settings["sp"], None, True)
@@ -427,6 +511,11 @@ def cancel_ride(ride_id: int, db: Session = Depends(get_db), current_user = Depe
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
+@app.get("/logout")
+def logout():
+    response = RedirectResponse(url="/")
+    response.delete_cookie("session")
+    return response
 
 # Pydantic model for request body
 class PaymentRequest(BaseModel):
