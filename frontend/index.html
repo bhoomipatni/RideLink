@@ -6,13 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RideLink — Campus Ridesharing</title>
   <link rel="stylesheet" href="styles.css" />
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RideLink Dashboard</title>
   <link rel="stylesheet" href="static/styles.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 </head>
 
@@ -29,25 +25,17 @@
         <div class="nav-links">
           <a href="post.html">Post a trip</a>
           <a href="ride.html">Find a Ride</a>
-          <a href="trips.html">My Trips</a>
+          <a href="#My Trips">My Trips</a>
           <a href="info.html">How It Works</a>
-          <a href="#contact">Contact Us</a>
+          <a href="contactUs.html">Contact Us</a>
+
           <div class="dropdown">
             <a class="dropdown-toggle">My Account ▾</a>
-            <div class="dropdown-menu">
+            <div class="dropdown-menu" id="account-menu">
               <a href="/login">Log In</a>
-              <a href="#signup">Sign Up</a>
-              <a href="#settings">Settings</a>
-
-              <header class="top-bar">
-                <div class="brand">
-                  <div class="logo">RL</div>
-                  <div>
-                    <img src="static/RideLink.png" width="150" height="80">
-                  </div>
-                </div>
             </div>
           </div>
+        </div>
       </nav>
     </div>
   </header>
@@ -107,6 +95,31 @@
   <footer id="contact">
     <p>© 2026 RideLink. Built for students.</p>
   </footer>
+
+  <script>
+    async function initUser() {
+      const menu = document.getElementById('account-menu');
+      try {
+        const res = await fetch('/api/me');
+        if (!res.ok) {
+          menu.innerHTML = `<a href="/login">Log In</a>`;
+          return;
+        }
+        const user = await res.json();
+        menu.innerHTML = `
+          <span style="padding: 8px 16px; display:block; font-weight:600; color:#888;">
+            👤 ${user.username}
+          </span>
+          <a href="settings.html">Settings</a>
+          <a href="/logout">Log Out</a>
+        `;
+      } catch (e) {
+        menu.innerHTML = `<a href="/login">Log In</a>`;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', initUser);
+  </script>
 
 </body>
 
