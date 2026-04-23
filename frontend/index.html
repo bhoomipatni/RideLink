@@ -6,15 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RideLink — Campus Ridesharing</title>
   <link rel="stylesheet" href="styles.css" />
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RideLink Dashboard</title>
   <link rel="stylesheet" href="static/styles.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 </head>
+
 <body>
 
   <header>
@@ -35,11 +32,9 @@
 
           <div class="dropdown">
             <a class="dropdown-toggle">My Account ▾</a>
-            <div class="dropdown-menu">
+            <div class="dropdown-menu" id="account-menu">
               <a href="/login">Log In</a>
-              <a href="settings.html">Settings</a>
             </div>
-            <header class="top-bar">
           </div>
         </div>
       </nav>
@@ -102,5 +97,31 @@
     <p>© 2026 RideLink. Built for students.</p>
   </footer>
 
+  <script>
+    async function initUser() {
+      const menu = document.getElementById('account-menu');
+      try {
+        const res = await fetch('/api/me');
+        if (!res.ok) {
+          menu.innerHTML = `<a href="/login">Log In</a>`;
+          return;
+        }
+        const user = await res.json();
+        menu.innerHTML = `
+          <span style="padding: 8px 16px; display:block; font-weight:600; color:#888;">
+            👤 ${user.username}
+          </span>
+          <a href="settings.html">Settings</a>
+          <a href="/logout">Log Out</a>
+        `;
+      } catch (e) {
+        menu.innerHTML = `<a href="/login">Log In</a>`;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', initUser);
+  </script>
+
 </body>
+
 </html>

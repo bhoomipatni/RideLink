@@ -1,8 +1,3 @@
-h1 {
-  /* margin: (top)px (right)px (bottom)px (left)px; or margin: (top/bottom)px (left/right)px*/
-  margin: 10px 100px;
-}
-
 :root {
   --primary: rgb(203, 21, 21);
   --secondary: #0f172a;
@@ -220,7 +215,6 @@ section {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 2rem;
-  background: blue;
 }
 
 .feature-card {
@@ -242,61 +236,70 @@ section {
 
 /* My Trips page */
 .trips-heading {
-  margin: 1.5rem 0 1rem;
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 2rem 0 1.25rem;
+  color: var(--secondary);
 }
 
 .tab-bar {
   display: flex;
   gap: 0;
   margin-bottom: 0;
+  border-bottom: 2px solid #e0e0e0;
 }
 
 .tab {
-  padding: 8px 20px;
-  border: 2px solid #e0e0e0;
-  border-bottom: none;
-  border-radius: 8px 8px 0 0;
-  background: #f0f0f0;
+  padding: 0.6rem 1.25rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  border-radius: 0;
+  background: none;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--muted);
+  transition: color 0.15s ease;
+}
+
+.tab:hover {
+  color: var(--secondary);
 }
 
 .tab.active {
-  background: var(--primary);
-  color: white;
-  font-weight: bold;
-  border: 2px solid rgb(170, 0, 0);
-  border-bottom: none;
-  margin-bottom: -2px;
-  position: relative;
-  z-index: 1;
+  color: var(--primary);
+  border-bottom: 2px solid var(--primary);
+  font-weight: 600;
+  background: none;
 }
 
 #trip-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  border: 2px solid rgb(170, 0, 0);
-  border-radius: 0 8px 8px 8px;
-  padding: 16px;
-  background-color: #fef2f2;
+  padding: 1.25rem 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
 }
 
 .trip-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 16px;
+  gap: 6px;
+  padding: 1rem 1.25rem;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   text-decoration: none;
   color: inherit;
   background-color: white;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .trip-card:hover {
   border-color: var(--primary);
-  background-color: #fff8f8;
+  box-shadow: 0 2px 8px rgba(203, 21, 21, 0.08);
 }
 
 .trip-card-top {
@@ -306,16 +309,77 @@ section {
 }
 
 .trip-destination {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  color: var(--text);
+  color: var(--secondary);
+}
+
+.trip-card-route {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.route-origin {
+  color: var(--muted);
+}
+
+.route-arrow {
+  color: var(--primary);
+  font-size: 12px;
+}
+
+.route-dest {
+  color: var(--secondary);
+  font-weight: 500;
 }
 
 .trip-card-meta {
   display: flex;
-  gap: 12px;
+  align-items: center;
+  gap: 5px;
   font-size: 13px;
   color: var(--muted);
+}
+
+.meta-icon {
+  font-size: 12px;
+}
+
+.meta-sep {
+  color: #cbd5e1;
+}
+
+.trip-card-passengers {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.passengers-label {
+  font-weight: 600;
+  color: var(--secondary);
+  flex-shrink: 0;
+}
+
+.passengers-names {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.seats-chip {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: #f1f5f9;
+  color: var(--secondary);
 }
 
 .trip-card-bottom {
@@ -323,42 +387,20 @@ section {
   justify-content: space-between;
   font-size: 13px;
   color: var(--muted);
-  padding-top: 6px;
+  padding-top: 8px;
   border-top: 1px solid #f1f5f9;
+  margin-top: 2px;
 }
 
 .trip-cost {
   font-weight: 600;
-  color: var(--text);
+  color: var(--secondary);
 }
 
-/* Tabs on My Trips page */
-.tab-bar {
-  display: flex;
-  gap: 0;
-  margin-bottom: 0px;
-  margin-left: 100px;
-}
-
-.tab {
-  padding: 8px 20px;
-  border: 2px solid #e0e0e0;
-  border-bottom: none;
-  border-radius: 8px 8px 0 0;
-  background: #f0f0f0;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.tab.active {
-  background: red;
-  color: black;
-  font-weight: bold;
-  border: 2px solid rgb(170, 0, 0);
-  border-bottom: none;
-  margin-bottom: -2px;
-  position: relative;
-  z-index: 1;
+.trips-empty {
+  color: var(--muted);
+  font-size: 0.95rem;
+  padding: 1rem 0;
 }
 
 /* Footer */
@@ -552,9 +594,14 @@ footer p {
   color: #1a1a1a;
 }
 
-.tab-btn.active {
-  color: #1a1a1a;
-  border-bottom-color: #1a1a1a;
+.header-route {
+  margin-top: 6px;
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.detail-body {
+  padding: 1.5rem;
 }
 
 /* Panels */
@@ -699,9 +746,10 @@ button.primary:hover:not(:disabled) {
   font-weight: 500;
 }
 
-.field-badge {
-  display: inline-block;
-  font-size: 0.72rem;
+.status-pill {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 99px;
   font-weight: 600;
   padding: 1px 7px;
   border-radius: 99px;
@@ -734,240 +782,195 @@ button.primary:hover:not(:disabled) {
   flex-direction: column;
 }
 
-.field-edit-form.open {
-  display: flex;
+.status-confirmed {
+  background: #dcfce7;
+  color: #166534;
 }
 
-.edit-actions {
-  display: flex;
-  gap: 0.5rem;
+.status-cancelled {
+  background: #fce8e8;
+  color: rgb(160, 15, 15);
 }
 
-/* Status messages */
-.status-msg {
-  font-size: 0.85rem;
-  margin-top: 0.4rem;
+.status-completed {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* ── Driver trip card accent ── */
+.trip-card-driver {
+  border-left: 3px solid var(--primary);
+}
+
+.driver-badge {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  background: #fce8e8;
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+
+/* ── Driver detail: passenger list ── */
+.passenger-list {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.5rem;
+}
+
+.passenger-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.passenger-row:last-child {
+  border-bottom: none;
+}
+
+.passenger-avatar {
+  flex-shrink: 0;
+}
+
+.passenger-info {
+  flex: 1;
+}
+
+.passenger-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--secondary);
+}
+
+.passenger-id {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+.passenger-badges {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+
+.badge-join-confirmed { background: #dcfce7; color: #166534; }
+.badge-join-pending   { background: #fef9c3; color: #854d0e; }
+.badge-pay-paid       { background: #e0f2fe; color: #075985; }
+.badge-pay-unpaid     { background: #fce8e8; color: rgb(160, 15, 15); }
+
+/* ── Driver edit panel ── */
+.edit-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.edit-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.edit-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.edit-input:focus {
+  border-color: var(--primary);
+  background: white;
+}
+
+select.edit-input {
+  cursor: pointer;
+}
+
+.edit-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.edit-actions-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.edit-save-btn {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary);
+  color: white;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.edit-save-btn:hover {
+  opacity: 0.88;
+}
+
+.edit-cancel-btn {
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  color: rgb(160, 15, 15);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.edit-cancel-btn:hover {
+  border-color: rgb(160, 15, 15);
+  background: #fce8e8;
+}
+
+.edit-status-msg {
+  font-size: 13px;
   min-height: 1.2em;
+  text-align: center;
 }
 
-.status-msg.success {
-  color: #1a7a3f;
-}
+.edit-status-success { color: #166534; }
+.edit-status-error   { color: rgb(160, 15, 15); }
 
-.status-msg.error {
-  color: #c0392b;
-}
-
-/* Danger zone */
-.danger-zone {
-  margin-top: 2rem;
-  border: 1px solid #f5c6cb;
-  border-radius: 10px;
-  padding: 1rem;
-  background: #fff8f8;
-}
-
-.danger-zone h3 {
-  margin-top: 0;
-  color: #c0392b;
-}
-
-.danger-zone p {
-  font-size: 0.88rem;
-  color: #777;
-  margin-bottom: 0.75rem;
-}
-
-button.danger {
-  background: #fff;
-  color: #c0392b;
-  border-color: #e74c3c;
-}
-
-button.danger:hover {
-  background: #fdf0f0;
-}
-
-@media (max-width: 640px) {
-  .settings-topbar {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  /* ── Trip Detail Page ── */
-  .detail-page {
-    max-width: 680px;
-    margin: 0 auto;
-    padding: 2rem 1.25rem;
-  }
-
-  .back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 14px;
-    color: var(--muted);
-    text-decoration: none;
-    margin-bottom: 1.5rem;
-  }
-
-  .back-link:hover {
-    color: var(--text);
-  }
-
-  .detail-card {
-    background: white;
-    border-radius: 16px;
-    border: 1px solid #e2e8f0;
-    overflow: hidden;
-  }
-
-  .detail-header {
-    background: var(--primary);
-    color: white;
-    padding: 1.75rem 1.5rem;
-  }
-
-  .detail-header .label {
-    font-size: 12px;
-    opacity: 0.8;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 4px;
-  }
-
-  .detail-header h1 {
-    font-size: 1.75rem;
-    font-weight: 600;
-    margin: 0;
-  }
-
-  .detail-header .meta {
-    margin-top: 8px;
-    font-size: 14px;
-    opacity: 0.9;
-  }
-
-  .detail-body {
-    padding: 1.5rem;
-  }
-
-  .detail-section-label {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--muted);
-    margin-bottom: 12px;
-    font-weight: 600;
-  }
-
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-bottom: 1.5rem;
-  }
-
-  .stat-box {
-    background: var(--bg);
-    border-radius: 10px;
-    padding: 14px;
-  }
-
-  .stat-box .stat-val {
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--text);
-  }
-
-  .stat-box .stat-lbl {
-    font-size: 12px;
-    color: var(--muted);
-    margin-top: 2px;
-  }
-
-  .driver-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 1.5rem;
-  }
-
-  .driver-avatar {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: #fce8e8;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--primary);
-    flex-shrink: 0;
-  }
-
-  .driver-name {
-    font-size: 15px;
-    font-weight: 600;
-  }
-
-  .driver-sub {
-    font-size: 13px;
-    color: var(--muted);
-  }
-
-  .detail-divider {
-    border: none;
-    border-top: 1px solid #e2e8f0;
-    margin: 1.25rem 0;
-  }
-
-  .detail-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid #f1f5f9;
-  }
-
-  .detail-row:last-child {
-    border-bottom: none;
-  }
-
-  .detail-row .detail-key {
-    font-size: 14px;
-    color: var(--muted);
-  }
-
-  .detail-row .detail-val {
-    font-size: 14px;
-    font-weight: 500;
-  }
-
-  /* Status for individual trip */
-  .status-pill {
-    font-size: 12px;
-    padding: 3px 10px;
-    border-radius: 99px;
-    font-weight: 600;
-  }
-
-  .status-confirmed {
-    /*you joined ride successfully and driver confirmed it's still on*/
-    background: #dcfce7;
-    color: #166534;
-  }
-
-  .status-cancelled {
-    /*driver cancelled ride*/
-    background: #fce8e8;
-    color: rgb(160, 15, 15);
-  }
-
-  .status-completed {
-    /*ride was completed*/
-    background: #f1f5f9;
-    color: #475569;
-  }
+.edit-cancelled-note {
+  font-size: 14px;
+  color: rgb(160, 15, 15);
+  padding: 0.75rem 0;
+  text-align: center;
 }
