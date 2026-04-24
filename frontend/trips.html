@@ -14,14 +14,19 @@
         <div class="logo">
           <a href="index.html"><img src="RideLink.png" alt="RideLink logo" /></a>
         </div>
-        <div class="nav-links">
+        <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <div class="nav-links" id="nav-links">
           <a href="post.html">Post a trip</a>
           <a href="ride.html">Find a Ride</a>
           <a href="trips.html">My Trips</a>
           <a href="info.html">How It Works</a>
           <a href="#contact">Contact Us</a>
-          <div class="dropdown">
-            <a class="dropdown-toggle">My Account ▾</a>
+          <div class="dropdown" id="nav-dropdown">
+            <a class="dropdown-toggle" onclick="toggleDropdown(event)">My Account ▾</a>
             <div class="dropdown-menu">
               <a href="/login">Log In</a>
               <a href="#signup">Sign Up</a>
@@ -50,5 +55,18 @@
   </footer>
 
   <script src="script.js"></script>
+  <script>
+    const hamburger = document.getElementById('hamburger');
+    const navLinks = document.getElementById('nav-links');
+    hamburger.addEventListener('click', () => {
+      const isOpen = navLinks.classList.toggle('open');
+      hamburger.classList.toggle('open', isOpen);
+      hamburger.setAttribute('aria-expanded', isOpen);
+    });
+    function toggleDropdown(e) {
+      e.preventDefault();
+      document.getElementById('nav-dropdown').classList.toggle('open');
+    }
+  </script>
 </body>
 </html>
