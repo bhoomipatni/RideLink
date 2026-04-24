@@ -35,6 +35,7 @@ header {
   position: sticky;
   top: 0;
   z-index: 10;
+  position: relative;
 }
 
 .container {
@@ -973,4 +974,349 @@ select.edit-input {
   color: rgb(160, 15, 15);
   padding: 0.75rem 0;
   text-align: center;
+}
+
+/* ── Trip Detail Page ── */
+.detail-page {
+  max-width: 680px;
+  margin: 2rem auto;
+  padding: 0 1.25rem 4rem;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 1.25rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.back-link:hover {
+  color: var(--primary);
+}
+
+.detail-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.detail-header {
+  background: var(--primary);
+  color: white;
+  padding: 1.5rem;
+}
+
+.detail-header .label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.8;
+  margin-bottom: 0.4rem;
+}
+
+.detail-header h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+
+.detail-header .meta {
+  font-size: 0.88rem;
+  opacity: 0.85;
+}
+
+.detail-body {
+  padding: 1.5rem;
+}
+
+.detail-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.detail-section-label:first-child {
+  margin-top: 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 1.25rem;
+}
+
+.stat-box {
+  background: var(--bg);
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.85rem 0.75rem;
+  text-align: center;
+}
+
+.stat-val {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--secondary);
+  margin-bottom: 3px;
+}
+
+.stat-lbl {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.driver-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0.75rem 0;
+}
+
+.driver-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.driver-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--secondary);
+}
+
+.driver-sub {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+.detail-divider {
+  border: none;
+  border-top: 1px solid #f1f5f9;
+  margin: 1rem 0;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f8fafc;
+  font-size: 0.9rem;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-key {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.detail-val {
+  color: var(--secondary);
+  font-weight: 600;
+}
+
+/* ── Mobile Hamburger Menu ── */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  margin-top: 0;
+}
+
+.hamburger span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: var(--secondary);
+  border-radius: 2px;
+  transition: all 0.25s ease;
+}
+
+.hamburger.open span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.hamburger.open span:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger.open span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+@media (max-width: 768px) {
+  .hamburger {
+    display: flex;
+  }
+
+  .nav-links {
+    display: none;
+    flex-direction: column;
+    gap: 0;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.5rem 0;
+    z-index: 99;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+
+  .nav-links.open {
+    display: flex;
+  }
+
+  .nav-links a {
+    margin-left: 0;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.95rem;
+  }
+
+  .nav-links a:last-of-type {
+    border-bottom: none;
+  }
+
+  .dropdown {
+    width: 100%;
+  }
+
+  .dropdown-menu {
+    position: static;
+    box-shadow: none;
+    border-radius: 0;
+    border-top: 1px solid #f1f5f9;
+    display: none;
+  }
+
+  .dropdown:hover .dropdown-menu {
+    display: none;
+  }
+
+  .dropdown.open .dropdown-menu {
+    display: block;
+  }
+
+  .dropdown-toggle {
+    display: block;
+    padding: 0.75rem 1.25rem;
+    width: 100%;
+  }
+}
+
+/* ── Responsive: Trips & Trip Detail pages ── */
+@media (max-width: 768px) {
+  .detail-page {
+    padding: 0 1rem 3rem;
+    margin: 1rem auto;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .stat-val {
+    font-size: 1rem;
+  }
+
+  .stat-box {
+    padding: 0.65rem 0.5rem;
+  }
+
+  .detail-header h1 {
+    font-size: 1.3rem;
+  }
+
+  .trips-heading {
+    font-size: 1.3rem;
+    margin: 1.25rem 0 1rem;
+  }
+
+  .tab-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab {
+    white-space: nowrap;
+    font-size: 0.88rem;
+    padding: 0.55rem 1rem;
+  }
+
+  .trip-card {
+    padding: 0.85rem 1rem;
+  }
+
+  .edit-row-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .edit-actions-row {
+    flex-direction: column;
+  }
+
+  .edit-save-btn,
+  .edit-cancel-btn {
+    width: 100%;
+  }
+}
+
+/* ── Responsive: Post a Trip form ── */
+@media (max-width: 768px) {
+  .form-section {
+    padding: 2rem 1rem;
+  }
+
+  .form-container {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .form-image-stack {
+    order: -1;
+  }
+
+  .form-image img {
+    max-height: 220px;
+    object-fit: contain;
+    margin: 0 auto;
+  }
+
+  .form-card {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .form-card h1 {
+    font-size: 1.4rem;
+  }
 }
