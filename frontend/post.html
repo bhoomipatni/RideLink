@@ -96,5 +96,16 @@
       document.getElementById('nav-dropdown').classList.toggle('open');
     }
   </script>
+  <script>
+    (function() {
+      const path = window.location.pathname.split("/").pop() || "index.html";
+      document.querySelectorAll(".nav-links a").forEach(link => {
+        const href = link.getAttribute("href");
+        if (href && href !== "#" && path === href) {
+          link.classList.add("nav-active");
+        }
+      });
+    })();
+  </script>
 </body>
 </html>

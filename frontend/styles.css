@@ -67,8 +67,12 @@ nav {
   font-weight: 500;
 }
 
-.nav-links a:hover {
+/* ── Active Nav Link ── */
+.nav-links a.nav-active {
   color: var(--primary);
+  font-weight: 600;
+  border-bottom: 2px solid var(--primary);
+  padding-bottom: 2px;
 }
 
 .dropdown {
