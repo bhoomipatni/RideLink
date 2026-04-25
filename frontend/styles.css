@@ -517,31 +517,6 @@ footer p {
   border-bottom: 2px solid var(--primary);
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .hero-content {
-    grid-template-columns: 1fr;
-    text-align: center;
-  }
-
-  .form-container {
-    flex-direction: column;
-  }
-
-  .form-image {
-    order: -1;
-  }
-
-  .nav-links {
-    display: none;
-  }
-
-  .cta-buttons a {
-    display: block;
-    margin: 0.5rem auto;
-  }
-}
-
 /* Settings Page */
 .settings-wrap {
   max-width: 680px;
@@ -1233,28 +1208,64 @@ select.edit-input {
   }
 }
 
-/* ── Responsive: Trips & Trip Detail pages ── */
+/* ── Responsive: All pages mobile layout ── */
 @media (max-width: 768px) {
-  .detail-page {
-    padding: 0 1rem 3rem;
-    margin: 1rem auto;
+
+  /* --- Hero section --- */
+  .hero {
+    padding: 3rem 1.25rem;
   }
 
-  .stats-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+  .hero-content {
+    grid-template-columns: 1fr;
+    text-align: center;
+    gap: 2rem;
   }
 
-  .stat-val {
+  .hero h1 {
+    font-size: 1.9rem;
+  }
+
+  .hero p {
     font-size: 1rem;
   }
 
-  .stat-box {
-    padding: 0.65rem 0.5rem;
+  .cta-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
   }
 
-  .detail-header h1 {
-    font-size: 1.3rem;
+  .cta-buttons a {
+    display: block;
+    width: 100%;
+    text-align: center;
+    margin-right: 0;
+  }
+
+  .hero-card {
+    padding: 1.25rem;
+  }
+
+  /* --- Feature cards --- */
+  .features {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .feature-card {
+    padding: 1.25rem;
+  }
+
+  .section-title h2 {
+    font-size: 1.5rem;
+  }
+
+  /* --- Trips page --- */
+  .detail-page {
+    padding: 0 1rem 3rem;
+    margin: 1rem auto;
   }
 
   .trips-heading {
@@ -1277,6 +1288,50 @@ select.edit-input {
     padding: 0.85rem 1rem;
   }
 
+  .trip-card-passengers {
+    flex-wrap: wrap;
+  }
+
+  .passengers-names {
+    max-width: 160px;
+  }
+
+  /* --- Trip detail page --- */
+  .detail-header {
+    padding: 1.25rem;
+  }
+
+  .detail-header h1 {
+    font-size: 1.3rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .stat-val {
+    font-size: 1rem;
+  }
+
+  .stat-box {
+    padding: 0.65rem 0.5rem;
+  }
+
+  .detail-body {
+    padding: 1.25rem 1rem;
+  }
+
+  .passenger-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .passenger-badges {
+    width: 100%;
+    padding-left: 54px;
+  }
+
   .edit-row-2 {
     grid-template-columns: 1fr;
   }
@@ -1289,10 +1344,8 @@ select.edit-input {
   .edit-cancel-btn {
     width: 100%;
   }
-}
 
-/* ── Responsive: Post a Trip form ── */
-@media (max-width: 768px) {
+  /* --- Post a Trip / Contact form pages --- */
   .form-section {
     padding: 2rem 1rem;
   }
@@ -1307,7 +1360,7 @@ select.edit-input {
   }
 
   .form-image img {
-    max-height: 220px;
+    max-height: 200px;
     object-fit: contain;
     margin: 0 auto;
   }
@@ -1318,5 +1371,80 @@ select.edit-input {
 
   .form-card h1 {
     font-size: 1.4rem;
+  }
+
+  .form-card h2 {
+    font-size: 1.1rem;
+  }
+
+  /* --- Settings page --- */
+  .settings-wrap {
+    padding: 0 1rem 3rem;
+    margin: 1rem auto;
+  }
+
+  .settings-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .settings-topbar h1 {
+    font-size: 1.3rem;
+  }
+
+  .field-row {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .edit-actions {
+    flex-direction: column;
+  }
+
+  /* --- Info / How It Works page --- */
+  section {
+    padding: 2.5rem 1.25rem;
+  }
+}
+
+/* ── Extra small screens (phones under 480px) ── */
+@media (max-width: 480px) {
+  .hero h1 {
+    font-size: 1.6rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .stat-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+    padding: 0.6rem 0.75rem;
+  }
+
+  .stat-val {
+    font-size: 1rem;
+  }
+
+  .stat-lbl {
+    font-size: 0.8rem;
+  }
+
+  .trip-card-meta {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .detail-header h1 {
+    font-size: 1.15rem;
+  }
+
+  .logo img {
+    height: 44px;
   }
 }
