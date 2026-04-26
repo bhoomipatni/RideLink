@@ -484,7 +484,7 @@ footer p {
 .field input {
   width: 100%;
   padding: 1.25rem 0.75rem 0.5rem;
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-family: inherit;
   border: none;
   border-bottom: 2px solid #e2e8f0;
@@ -508,7 +508,7 @@ footer p {
 /* Floating effect */
 .field input:focus+label,
 .field input:not(:placeholder-shown)+label {
-  transform: translateY(-0.75rem) scale(0.8);
+  transform: translateY(-1rem) scale(0.8);
   color: var(--primary);
 }
 

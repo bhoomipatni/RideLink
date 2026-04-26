@@ -25,3 +25,8 @@ submit.addEventListener("click", async () => {
         console.error("fetch error:", e);
     }
 });
+
+document.getElementById("seats").addEventListener("input", function() {
+  if (this.value > 25) this.value = 25;
+  if (this.value < 1 && this.value !== "") this.value = 1;
+});
