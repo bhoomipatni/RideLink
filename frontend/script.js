@@ -8,6 +8,11 @@ async function loadIndTrip() {
 
   if (!trip) return;
 
+  const cost = await fetchEstimatedCost(trip.origin, trip.destination);
+  if (cost !== null) {
+    trip.cost = cost;
+  }
+
   if (trip.role === 'driver') {
     renderDriverDetail(trip);
   } else {
@@ -201,12 +206,27 @@ if (document.getElementById('destination')) {
   loadIndTrip();
 }
 
+async function fetchEstimatedCost(origin, destination) {
+  const res = await fetch(`/estimate?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`);
+  if (!res.ok) {
+    return null;
+  }
+  const data = await res.json();
+  return data.cost;
+}
 
 //trips.html
 
 async function loadTrips(filter = 'upcoming') {
   const response = await fetch('test.json');
   const trips = await response.json();
+
+  await Promise.all(trips.map(async trip => {
+    const cost = await fetchEstimatedCost(trip.origin, trip.destination);
+    if (cost !== null) {
+      trip.cost = cost;
+    }
+  }));
 
   const today = new Date();
   const upcomingList = [];

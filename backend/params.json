@@ -4,5 +4,6 @@
     "GET_ETA_COUNT" : 10,
     "BASE_FARE": 2.50,
     "COST_PER_MILE": 1.25,
-    "COST_PER_MINUTE": 0.30
+    "COST_PER_MINUTE": 0.30,
+    "TRAFFIC_AWARE": true
 }

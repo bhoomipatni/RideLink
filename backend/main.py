@@ -9,7 +9,7 @@ from fastapi.templating import Jinja2Templates
 import models
 from models import engine
 from sqlalchemy.orm import sessionmaker, Session
-from .models import User, Rides, Base, engine
+from models import User, Rides, Base, engine
 import datetime
 import json
 import os
@@ -19,9 +19,9 @@ from onelogin.saml2.auth import OneLogin_Saml2_Auth
 from onelogin.saml2.metadata import OneLogin_Saml2_Metadata
 import jwt
 from apscheduler.schedulers.background import BackgroundScheduler
-from backend.check_rides import expire_old_rides
-from backend.core.security import JWT_SECRET, create_token
-from backend.core.security import decode_token
+from check_rides import expire_old_rides
+from core.security import JWT_SECRET, create_token
+from core.security import decode_token
 import traceback
 
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
