@@ -12,9 +12,7 @@
     <div class="container">
       <nav>
         <div class="logo">
-          <a href="index.html">
-            <img src="RideLink.png" alt="RideLink logo" />
-          </a>
+          <a href="index.html"><img src="RideLink.png" alt="RideLink logo" /></a>
         </div>
         <div class="nav-links">
           <a href="post.html">Post a trip</a>
@@ -39,8 +37,9 @@
     <div class="detail-page">
       <h1 class="trips-heading">My Trips</h1>
       <div class="tab-bar">
-        <button class="tab active" onclick="showTab('upcoming')">Upcoming</button>
-        <button class="tab" onclick="showTab('past')">Past</button>
+        <button class="tab active" onclick="showTab('upcoming', event)">Upcoming</button>
+        <button class="tab" onclick="showTab('past', event)">Past</button>
+        <button class="tab" onclick="showTab('driver', event)">Driver</button>
       </div>
       <div id="trip-list"></div>
     </div>

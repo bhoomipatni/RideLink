@@ -4,7 +4,6 @@ from sqlalchemy.ext.mutable import MutableList
 from sqlalchemy import Boolean, Float, ForeignKey, create_engine, Column, Integer, String, DateTime
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import Float, Boolean
 from sqlalchemy.orm import relationship
 import datetime
 import os
@@ -22,7 +21,7 @@ engine = create_engine(database_url, pool_pre_ping=True, pool_recycle=300)
 
 class User(Base):
     __tablename__ = 'Users'
-    username = Column(String(50), nullable=False)
+    username = Column(String(100), nullable=False)
     isdriver = Column(Boolean, nullable=False, default=False)
     rcsid = Column(String(50), primary_key=True, unique=True, nullable=False)
     rides = Column(MutableList.as_mutable(ARRAY(Integer)), nullable=True) # this is just a list of ride ids, can be null if no rides
@@ -43,7 +42,7 @@ class Rides(Base):
     description = Column(String(500), nullable=True)
     date = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc), nullable=False)
     lat = Column(Float, nullable=False)
-    lon = Column("long", Float, nullable=False)
+    lon = Column("longitude", Float, nullable=False)
     riders = Column(ARRAY(String(50)), nullable=True)
 # create all tables
 Base.metadata.create_all(engine)
