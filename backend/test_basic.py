@@ -144,3 +144,19 @@ def test_search_rides():
     assert isinstance(response.json(), list)
     assert len(response.json()) > 0
     assert response.json()[0]["ride"]["driverid"] == "testuser"
+
+def test_five_upcoming_rides():
+    ride_ids = []
+    for i in range(1, 8):
+        future_date = (datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=i)).isoformat()
+        create = client.post("/request_ride", json={"driverid": "testuser", "address": "1600 Pennsylvania Avenue NW", "origin": "456 Elm St", "cost": 10.0, "date": future_date})
+        assert create.status_code == 200, create.json()
+        ride_ids.append(create.json()["id"])
+
+    response = client.get("/five_upcoming_rides")
+    assert response.status_code == 200
+    rides = response.json()["rides"]
+    assert len(rides) == 5
+    dates = [r["date"] for r in rides]
+    assert dates == sorted(dates)
+    assert [r["id"] for r in rides] == ride_ids[:5]

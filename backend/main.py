@@ -318,6 +318,9 @@ def search_rides(address: str, date: str, db: Session = Depends(get_db)):
     max_lat = lat + DISTANCE_LIMIT
     min_lon = lon - DISTANCE_LIMIT
     max_lon = lon + DISTANCE_LIMIT
+    parsed_date = datetime.datetime.fromisoformat(date)
+    date_min = parsed_date - datetime.timedelta(hours=24)
+    date_max = parsed_date + datetime.timedelta(hours=24)
     # then query the database for rides within the bounding box and are within 24 hours of the request date both ways
     rides = db.query(models.Rides).filter(
         models.Rides.lat >= min_lat,
@@ -325,8 +328,8 @@ def search_rides(address: str, date: str, db: Session = Depends(get_db)):
         models.Rides.lon >= min_lon,
         models.Rides.lon <= max_lon,
         models.Rides.isactive == True,
-        models.Rides.date >= datetime.datetime.fromisoformat(date) - datetime.timedelta(hours=24),
-        models.Rides.date <= datetime.datetime.fromisoformat(date) + datetime.timedelta(hours=24),
+        models.Rides.date >= date_min,
+        models.Rides.date <= date_max,
     ).all()
     # sort rides by distance to address in degrees so we can get the top to send to the API
     rides.sort(key=lambda r: (r.lat - lat)**2 + (r.lon - lon)**2)
@@ -480,6 +483,12 @@ def get_previous_rides(db: Session = Depends(get_db), current_user = Depends(get
 
     return RideListResponse(rides=rides or [])
 
+@app.get("/five_upcoming_rides", response_model=RideListResponse)
+def five_upcoming_rides(db: Session = Depends(get_db)):
+    rides = db.query(models.Rides).filter(
+        models.Rides.date > datetime.datetime.now(datetime.timezone.utc),
+        models.Rides.isactive == True).order_by(models.Rides.date.asc()).limit(5).all()
+    return RideListResponse(rides=rides or [])
 
 @app.post("/complete_ride/{ride_id}")
 def complete_ride(ride_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
