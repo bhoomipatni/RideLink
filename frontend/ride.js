@@ -1,46 +1,58 @@
 let map;
 let autocomplete;
 let rideMarkers = [];
+let destinationPlace;
 
-function initMap() {
+function initRideMap() {
     map = new google.maps.Map(document.getElementById("map"), {
         center: { lat: 39.8283, lng: -98.5795 },
         zoom: 4,
+        mapTypeControl: false,
+        streetViewControl: false,
     });
 
-    let mapSearch = document.createElement("input");
-    mapSearch.type = "text";
-    mapSearch.placeholder = "Search for a location";
-    mapSearch.style.cssText = "margin:10px;padding:8px 12px;width:300px;font-size:14px;border:none;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,0.3);";
-
-    map.controls[google.maps.ControlPosition.TOP_CENTER].push(mapSearch);
-
-    let marker;
-    autocomplete = new google.maps.places.Autocomplete(mapSearch, {
-        fields: ["formatted_address", "geometry"],
+    autocomplete = new google.maps.places.Autocomplete(document.getElementById("address"), {
+        fields: ["formatted_address", "geometry", "name"],
+        componentRestrictions: { country: "us" },
     });
 
     autocomplete.addListener("place_changed", () => {
-        let place = autocomplete.getPlace();
-        if (place.geometry) {
-            map.setCenter(place.geometry.location);
+        destinationPlace = autocomplete.getPlace();
+        if (destinationPlace.geometry) {
+            map.setCenter(destinationPlace.geometry.location);
             map.setZoom(14);
-            if (marker) marker.setMap(null);
-            marker = new google.maps.Marker({
+            new google.maps.Marker({
                 map: map,
-                position: place.geometry.location,
+                position: destinationPlace.geometry.location,
+                title: destinationPlace.formatted_address || destinationPlace.name,
             });
-            document.getElementById("address").value = place.formatted_address;
+            document.getElementById("address").value = destinationPlace.formatted_address;
         }
+    });
+
+    document.getElementById("address").addEventListener("input", () => {
+        destinationPlace = null;
     });
 }
 
-window.initMap = initMap;
+async function loadGoogleMaps() {
+    try {
+        const response = await fetch("/google-maps-config");
+        if (!response.ok) throw new Error("Google Maps is not configured");
+        const { api_key: apiKey } = await response.json();
+        window.initRideMap = initRideMap;
+        const script = document.createElement("script");
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&loading=async&libraries=places&callback=initRideMap`;
+        script.async = true;
+        script.defer = true;
+        script.onerror = () => console.error("Google Maps could not be loaded");
+        document.head.appendChild(script);
+    } catch (error) {
+        console.error("Google Maps could not be loaded:", error.message);
+    }
+}
 
-let script = document.createElement("script");
-script.src = "/get_map";
-script.async = true;
-document.head.appendChild(script);
+loadGoogleMaps();
 
 let searchBtn = document.getElementById("searchButton");
 searchBtn.addEventListener("click", async () => {
@@ -94,7 +106,7 @@ searchBtn.addEventListener("click", async () => {
             bounds.extend(pos);
 
             // AI GEN REPLACE IN PROD ⚠️
-            resultsDiv.innerHTML += `
+            let rideCardHtml = `
             <div class="ride-card">
                 <div class="ride-card-header">
                     <span class="ride-origin">${r.origin}</span>
@@ -104,11 +116,16 @@ searchBtn.addEventListener("click", async () => {
                 <div class="ride-card-body">
                     <div class="ride-detail"><strong>Date:</strong> ${dateStr}</div>
                     <div class="ride-detail"><strong>Cost:</strong> $${r.cost.toFixed(2)}</div>
+                    <div class="ride-detail"><strong>Available Seats:</strong> ${r.seat_count}</div>
                     <div class="ride-detail"><strong>Trip Duration:</strong> ${trueEta}</div>
                     <div class="ride-detail"><strong>Detour ETA:</strong> ${eta}</div>
                     ${r.description ? `<div class="ride-detail"><strong>Info:</strong> ${r.description}</div>` : ""}
                 </div>
+                <div class="ride-card-actions">
+                    <button class="request-ride-btn" data-ride-id="${r.id}">Request Ride</button>
+                </div>
             </div>`;
+            resultsDiv.innerHTML += rideCardHtml;
         }
         if (rideMarkers.length > 0) {
             map.fitBounds(bounds);
@@ -116,8 +133,53 @@ searchBtn.addEventListener("click", async () => {
                 if (map.getZoom() > 10) map.setZoom(10);
             });
         }
+
+        // Attach event listeners to request buttons
+        document.querySelectorAll(".request-ride-btn").forEach(btn => {
+            btn.addEventListener("click", async (e) => {
+                e.preventDefault();
+                const rideId = parseInt(btn.getAttribute("data-ride-id"));
+                await requestRide(rideId);
+            });
+        });
     } catch (e) {
         console.error("fetch error:", e);
         resultsDiv.innerHTML = "<p class='no-results'>Error: " + e.message + "</p>";
     }
 });
+
+async function requestRide(rideId) {
+    try {
+        // Check authentication
+        const meResponse = await fetch("/me");
+        const meData = await meResponse.json();
+
+        if (!meData.authenticated) {
+            alert("Please log in first");
+            window.location.href = "/login";
+            return;
+        }
+
+        // Request the ride
+        const response = await fetch("/add_rider", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                ride_id: rideId
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert("Ride request submitted! The driver will review your request.");
+        } else {
+            alert("Error requesting ride: " + (result.detail || "Unknown error"));
+        }
+    } catch (e) {
+        console.error("Error requesting ride:", e);
+        alert("Error: " + e.message);
+    }
+}

@@ -465,6 +465,31 @@ footer p {
   gap: 1rem;
 }
 
+.trip-map-panel {
+  background: white;
+  padding: 1.25rem;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+}
+
+.trip-map-heading h2 {
+  color: var(--secondary);
+  font-size: 1.2rem;
+  margin-bottom: 0.25rem;
+}
+
+.trip-map-heading p {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+#postTripMap {
+  min-height: 320px;
+  border-radius: 0.75rem;
+  background: #e2e8f0;
+}
+
 /* Image styling */
 .form-image img {
   width: auto;
@@ -832,6 +857,142 @@ button.primary:hover:not(:disabled) {
 
 .passenger-avatar {
   flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.passenger-info {
+  flex: 1;
+}
+
+.passenger-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1e293b;
+}
+
+.passenger-id {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.passenger-badges {
+  display: flex;
+  gap: 8px;
+}
+
+.badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.badge-join-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge-join-confirmed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-pay-unpaid {
+  background: #fee2e2;
+  color: #7f1d1d;
+}
+
+.badge-pay-paid {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* Passenger actions for drivers */
+.passenger-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-accept,
+.btn-deny {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-accept {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.btn-accept:hover {
+  background: #bbf7d0;
+}
+
+.btn-deny {
+  background: #fee2e2;
+  color: #7f1d1d;
+}
+
+.btn-deny:hover {
+  background: #fecaca;
+}
+
+/* Ride card actions */
+.ride-card-actions {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  gap: 8px;
+}
+
+.request-ride-btn {
+  flex: 1;
+  padding: 10px 16px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.request-ride-btn:hover {
+  background: #dc2626;
+}
+
+.request-ride-btn:active {
+  transform: scale(0.98);
+}
+
+.no-passengers {
+  text-align: center;
+  color: #64748b;
+  padding: 20px 0;
+  font-style: italic;
+}
+
+border-bottom: none;
+}
+
+.passenger-avatar {
+  flex-shrink: 0;
 }
 
 .passenger-info {
@@ -863,10 +1024,25 @@ button.primary:hover:not(:disabled) {
   border-radius: 99px;
 }
 
-.badge-join-confirmed { background: #dcfce7; color: #166534; }
-.badge-join-pending   { background: #fef9c3; color: #854d0e; }
-.badge-pay-paid       { background: #e0f2fe; color: #075985; }
-.badge-pay-unpaid     { background: #fce8e8; color: rgb(160, 15, 15); }
+.badge-join-confirmed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-join-pending {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.badge-pay-paid {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.badge-pay-unpaid {
+  background: #fce8e8;
+  color: rgb(160, 15, 15);
+}
 
 /* ── Driver edit panel ── */
 .edit-panel {
@@ -965,8 +1141,13 @@ select.edit-input {
   text-align: center;
 }
 
-.edit-status-success { color: #166534; }
-.edit-status-error   { color: rgb(160, 15, 15); }
+.edit-status-success {
+  color: #166534;
+}
+
+.edit-status-error {
+  color: rgb(160, 15, 15);
+}
 
 .edit-cancelled-note {
   font-size: 14px;
