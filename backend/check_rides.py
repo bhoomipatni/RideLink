@@ -1,6 +1,6 @@
 import datetime
 from sqlalchemy.orm import sessionmaker
-from backend.models import engine, Rides
+from models import engine, Rides
 
 _Session = sessionmaker(bind=engine)
 

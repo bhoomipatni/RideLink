@@ -6,10 +6,10 @@ from pydantic import BaseModel, ConfigDict
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from backend import models
-from backend.models import engine
+import models
+from models import engine
 from sqlalchemy.orm import sessionmaker, Session
-from .models import User, Rides, Base, engine
+from models import User, Rides, Base, engine
 import datetime
 import json
 import os
@@ -19,9 +19,9 @@ from onelogin.saml2.auth import OneLogin_Saml2_Auth
 from onelogin.saml2.metadata import OneLogin_Saml2_Metadata
 import jwt
 from apscheduler.schedulers.background import BackgroundScheduler
-from backend.check_rides import expire_old_rides
-from backend.core.security import JWT_SECRET, create_token
-from backend.core.security import decode_token
+from check_rides import expire_old_rides
+from core.security import JWT_SECRET, create_token
+from core.security import decode_token
 import traceback
 
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
@@ -141,6 +141,31 @@ class RideWithETA(BaseModel):
 # this is the response model for upcoming/previous rides
 class RideListResponse(BaseModel):
     rides: list[RideResponse]
+
+# backend calculator
+class estimateRequest(BaseModel):
+    origin: str
+    destination: str
+
+class estimateResponse(BaseModel):
+    origin: str
+    destination: str
+    distance: float
+    time: float
+    cost: float
+    breakdown: dict # if we want to show how the cost is calculated
+
+def geocode_address(address: str) -> tuple[float, float]: # take in address and return lat and long
+    geo = requests.get("https://maps.googleapis.com/maps/api/geocode/json", params={"address": address, "key": GOOGLE_API_KEY}).json()
+    if geo.get("status") != "OK" or not geo.get("results"): 
+        raise HTTPException(status_code=400, detail=f"Could not find the address: {address}")
+    result = geo.get("results", [{}])
+    location = result.get("geometry", {}).get("location", {})
+    lat = location.get("lat")
+    lng = location.get("lng")
+    if lat is None or lng is None:
+        raise HTTPException(status_code=400, detail=f"Could not find the address: {address}")
+    return lat, lng
 
 @app.get("/")
 async def read_root():
@@ -516,6 +541,49 @@ def logout():
     response = RedirectResponse(url="/")
     response.delete_cookie("session")
     return response
+
+BASE_FARE = _params["BASE_FARE"]
+COST_PER_MILE = _params["COST_PER_MILE"]
+COST_PER_MINUTE = _params["COST_PER_MINUTE"]
+
+@app.get("/estimate", response_model=estimateResponse)
+def estimate(origin: str, destination: str):
+    o_lat, o_lng = geocode_address(origin)
+    d_lat, d_lng = geocode_address(destination)
+    route = requests.post("https://routes.googleapis.com/directions/v2:computeRoutes",
+        headers={
+            "X-Goog-Api-Key": GOOGLE_API_KEY,
+            "X-Goog-FieldMask": "routes.distanceMeters,routes.duration"
+        },
+        json={
+            "origin": {"location": {"latLng": {"latitude": o_lat, "longitude": o_lng}}},
+            "destination": {"location": {"latLng": {"latitude": d_lat, "longitude": d_lng}}},
+            "travelMode": "DRIVE",
+            "routingPreference": "TRAFFIC_AWARE"
+        }
+    ).json()
+    routes = route.get("routes")
+    if not routes:
+        raise HTTPException(status_code=400, detail="Could not compute route between addresses")
+    route = routes[0]
+    miles = route.get("distanceMeters", 0) / 1609.34
+    minutes = int(float(route.get("duration", "0s").rstrip("s"))) / 60
+    time_cost = minutes * COST_PER_MINUTE
+    distance_cost = miles * COST_PER_MILE
+    total = round(max(BASE_FARE + time_cost + distance_cost), 2)
+    return estimateResponse(
+        origin = origin,
+        destination = destination,
+        distance = round(miles, 2),
+        time = round(minutes, 2),
+        cost = total,
+        breakdown={
+            "base_fare": BASE_FARE,
+            "distance_cost": round(distance_cost, 2),
+            "time_cost": round(time_cost, 2),
+            "total": total
+        }
+    )
 
 # Pydantic model for request body
 class PaymentRequest(BaseModel):
